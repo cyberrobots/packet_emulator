@@ -1,0 +1,8 @@
+Stream=Stream1
+dst_mac=a0:ab:cc:01:23:23
+src_mac=a0:ab:cc:aa:23:aa
+in_iface=enp0s25
+out_iface=lo
+
+
+

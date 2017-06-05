@@ -1,0 +1,3 @@
+[submodule "libs/llib"]
+	path = libs/llib
+	url = git@bitbucket.org:slyras/linked_lists_lib.git

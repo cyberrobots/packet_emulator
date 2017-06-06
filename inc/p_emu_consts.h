@@ -16,12 +16,20 @@
 /* Maximum Allowed stream name */
 #define P_EMU_STREAM_NAME_LEN	(64)
 
+ /* Maximum receive timeout on the Rx path (seconds) */
+#define P_EMU_RX_PATH_RECEIVE_TIMEOUT (10)
 
 
+#define P_EMU_JUMBO_ETH_FRAME_SIZE	(65536)
 
+#define P_EMU_ETH_FRAME_SIZE		(1542)
 
-
-
+/* Set maximum Frame buffer */
+#ifdef P_EMU_JUMBO_FRAME
+#define P_EMU_MAX_INPUT_BUFFER_SIZE	(P_EMU_JUMBO_ETH_FRAME_SIZE)
+#else
+#define P_EMU_MAX_INPUT_BUFFER_SIZE	(P_EMU_ETH_FRAME_SIZE)
+#endif
 
 
 

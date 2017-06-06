@@ -3,7 +3,19 @@
 #include "p_emu_core.h"
 #include "p_emu_help.h"
 
+struct p_emu_packet * p_emu_packet_init()
+{
+	struct p_emu_packet *pack = malloc(sizeof(struct p_emu_packet) +
+					   P_EMU_MAX_INPUT_BUFFER_SIZE);
+	if(!pack)
+		return NULL;
 
+	memset(pack,0,sizeof(struct p_emu_packet));
+
+	pack->node.data = pack;
+
+	return pack;
+}
 
 void p_emu_rx_sock_list_update(void* data, slib_node_t* node)
 {
@@ -25,21 +37,30 @@ void p_emu_rx_sock_list_update(void* data, slib_node_t* node)
 	return;
 }
 
-static uint8_t buff[4096];
+
+/* Rx callback function, just receive here the pakcet.
+   We are going to decide later if we are going to keep the packet or not.
+*/
+
 void p_emu_rx_packet(void* data, slib_node_t* node)
 {
 	struct p_emu_stream *stream = (struct p_emu_stream *)node->data;
 
+	struct p_emu_packet *pack = p_emu_packet_init();
 
-	int len = 0;
+	if(!pack){
+		P_ERROR(DBG_ERROR,"Packet Allocation Failed");
+		return;
+	}
 
-	memset(buff,0, 4096);
+	pack->length = recvfrom(stream->config.rx_iface_fd,pack->payload,
+				(size_t)P_EMU_MAX_INPUT_BUFFER_SIZE,0,NULL,NULL);
 
-	len = recvfrom(stream->config.rx_iface_fd,buff,(size_t)4096,0,NULL,NULL);
-
-	if(len > 0){
+	if(pack->length > 0){
 		P_ERROR(DBG_INFO,"___SOCKET [%d] RECEIVED DATA [%d]___",
-			stream->config.rx_iface_fd,len);
+			stream->config.rx_iface_fd,pack->length);
+
+		slib_list_add_last_node (stream->rx_list,&pack->node);
 	}
 
 	return;
@@ -51,30 +72,23 @@ void* p_emu_RxThread(void* params)
 	struct p_emu_rx_config* cfg = (struct p_emu_rx_config*)params;
 	slib_root_t *streams = cfg->streams;
 	struct p_emu_socket_list rx_sockets;
-	struct timespec tv;
 	struct timeval 	timeout;
-
-
 
 	/* Initialize FD_SET */
 	memset(&rx_sockets,0,sizeof(struct p_emu_socket_list));
 	FD_ZERO(&rx_sockets.socketfds);
 	rx_sockets.max_sokcet_fd = -1;
 
-
 	/* Update FD_SET */
 	slib_func_exec (streams,&rx_sockets,p_emu_rx_sock_list_update);
 
-
-
-	//while(1){sleep(1000);}
-
-	timeout.tv_sec	= 10;
+	timeout.tv_sec	= P_EMU_RX_PATH_RECEIVE_TIMEOUT;
 	timeout.tv_usec	= 0;
 
 	while(1)
 	{
-		if(likely(select(streams->index+1,&rx_sockets.socketfds,NULL,NULL,&timeout) >= 0))
+		if(likely(select(rx_sockets.max_sokcet_fd + 1,
+				 &rx_sockets.socketfds,NULL,NULL,&timeout)>=0))
 		{
 			P_ERROR(DBG_INFO,"___SELECT_EVENT_RECEIVED___");
 			slib_func_exec (streams,NULL,p_emu_rx_packet);
@@ -89,11 +103,10 @@ void* p_emu_RxThread(void* params)
 
 		slib_func_exec (streams,&rx_sockets,p_emu_rx_sock_list_update);
 
-		timeout.tv_sec	= 10;
+		timeout.tv_sec	= P_EMU_RX_PATH_RECEIVE_TIMEOUT;
 		timeout.tv_usec	= 0;
 
 	}
-
 
 	return NULL;
 }

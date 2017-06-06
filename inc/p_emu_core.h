@@ -78,9 +78,9 @@ struct p_emu_stream {
 	struct		p_emu_stream_config config;
 	struct		p_emu_filter_config filter;
 	struct		p_emu_delay_config delay;
-	slib_root_t	rx_list;
+	slib_root_t	*rx_list;
 	uint16_t	rx_list_max_size;
-	slib_root_t	tx_list;
+	slib_root_t	*tx_list;
 	uint16_t	tx_list_max_size;
 };
 
@@ -94,10 +94,16 @@ struct p_emu_rx_config {
 	slib_root_t *streams;
 };
 
-
-
 struct p_emu_tx_config {
 	slib_root_t *streams;
+};
+
+struct p_emu_packet {
+	slib_node_t node;
+	int length;		/* Payload length. */
+	struct timespec tv;	/* Time packet arrived. */
+	struct timespec leave;	/* Time packet supposed to leave. */
+	uint8_t payload[0];	/* Payload */
 };
 
 

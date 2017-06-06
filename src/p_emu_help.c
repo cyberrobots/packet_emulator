@@ -400,8 +400,18 @@ struct p_emu_stream * p_emu_StreamInit (char* stream_name)
 	Stream->config.rx_iface_fd = P_EMU_UNINITIALIZED;
 	Stream->config.tx_iface_fd = P_EMU_UNINITIALIZED;
 
+	/* Initialize stream's rx_list and tx_list */
+
+	Stream->rx_list = slib_list_init();
 	Stream->rx_list_max_size = P_EMU_MAX_LIST_SIZE;
+
+	Stream->tx_list = slib_list_init();
 	Stream->tx_list_max_size = P_EMU_MAX_LIST_SIZE;
+
+	if(!Stream->rx_list || !Stream->tx_list){
+		memset(Stream,0,sizeof(struct p_emu_stream));
+		free(Stream);
+	}
 
 	return Stream;
 }
@@ -455,7 +465,10 @@ int p_emu_import_settings(const char *filename, slib_root_t *streams)
 				if(slib_list_add_last(streams,Stream)
 						!= LIST_OP_SUCCESS)
 				{
-					P_ERROR(DBG_ERROR,"Adding to list failed!");
+					P_ERROR(DBG_ERROR,
+						"Adding [%p] to list failed!",
+						Stream);
+
 					goto termination;
 				}
 			}

@@ -6,7 +6,7 @@ CC 		= gcc
 LD          	= gcc
 CFLAGS  	= -g -O0 -Wall -D_REENTRANT 
 LDFLAGS 	= -lpthread -lrt -lm
-OUTPUTFILE      = p_emu
+OUTPUTFILE      = p_emu.bin
 
 #Source Directories
 # Header file paths

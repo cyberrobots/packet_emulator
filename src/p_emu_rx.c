@@ -12,10 +12,26 @@ struct p_emu_packet * p_emu_packet_init()
 
 	memset(pack,0,sizeof(struct p_emu_packet));
 
+	P_ERROR(DBG_INFO,"New packet______(%p)",pack);
 	pack->node.data = pack;
+	P_ERROR(DBG_INFO,"New packet______(%p)",pack->node.data);
 
 	return pack;
 }
+
+
+void p_emu_packet_discard(struct p_emu_packet *packet)
+{
+	if(!packet)
+	{
+		P_ERROR(DBG_ERROR,"Invalid Pakcet");
+		return;
+	}
+	free(packet);
+	packet = (struct p_emu_packet *)NULL;
+}
+
+
 
 void p_emu_rx_sock_list_update(void* data, slib_node_t* node)
 {
@@ -25,10 +41,11 @@ void p_emu_rx_sock_list_update(void* data, slib_node_t* node)
 	/* Store the biggest socket descriptor. */
 	if(stream->config.rx_iface_fd > sock_list->max_sokcet_fd){
 		sock_list->max_sokcet_fd = stream->config.rx_iface_fd;
-		P_ERROR(DBG_INFO,"MAX__SOCKET [%d]__",sock_list->max_sokcet_fd);
+		P_ERROR(DBG_INFO,"Updating Max Socket [%d]",
+			sock_list->max_sokcet_fd);
 	}
 
-	P_ERROR(DBG_INFO,"___SOCKET [%d]__",stream->config.rx_iface_fd);
+	P_ERROR(DBG_INFO,"Import Socket (%d)",stream->config.rx_iface_fd);
 
 	/* Import the socket descritor to the fd_set */
 	FD_CLR(stream->config.rx_iface_fd,&sock_list->socketfds);
@@ -56,11 +73,24 @@ void p_emu_rx_packet(void* data, slib_node_t* node)
 	pack->length = recvfrom(stream->config.rx_iface_fd,pack->payload,
 				(size_t)P_EMU_MAX_INPUT_BUFFER_SIZE,0,NULL,NULL);
 
-	if(pack->length > 0){
-		P_ERROR(DBG_INFO,"___SOCKET [%d] RECEIVED DATA [%d]___",
-			stream->config.rx_iface_fd,pack->length);
+	if(likely(pack->length > 0))
+	{
+		clock_gettime(CLOCK_REALTIME,&pack->arrival);
 
-		slib_list_add_last_node (stream->rx_list,&pack->node);
+		P_ERROR(DBG_INFO,"SOCK-->(%d) Length (%d) Time [%lu]s [%lu]ns ",
+			stream->config.rx_iface_fd,
+			pack->length,
+			pack->arrival.tv_sec,
+		        pack->arrival.tv_nsec);
+
+		if(slib_list_add_last_node
+				(stream->rx_list,&pack->node)!=LIST_OP_SUCCESS){
+			P_ERROR(DBG_ERROR,"Importing frame failed!!!");
+			assert(0);
+			return;
+		}
+
+		p_emu_post_rx_signal();
 	}
 
 	return;
@@ -90,7 +120,6 @@ void* p_emu_RxThread(void* params)
 		if(likely(select(rx_sockets.max_sokcet_fd + 1,
 				 &rx_sockets.socketfds,NULL,NULL,&timeout)>=0))
 		{
-			P_ERROR(DBG_INFO,"___SELECT_EVENT_RECEIVED___");
 			slib_func_exec (streams,NULL,p_emu_rx_packet);
 		}
 		else
@@ -98,13 +127,14 @@ void* p_emu_RxThread(void* params)
 			P_ERROR(DBG_ERROR,"___SELECT_ERROR___");
 		}
 
+		/* Reset select */
+		{
+			slib_func_exec (streams,
+					&rx_sockets,p_emu_rx_sock_list_update);
 
-		P_ERROR(DBG_INFO,"___RESET___");
-
-		slib_func_exec (streams,&rx_sockets,p_emu_rx_sock_list_update);
-
-		timeout.tv_sec	= P_EMU_RX_PATH_RECEIVE_TIMEOUT;
-		timeout.tv_usec	= 0;
+			timeout.tv_sec	= P_EMU_RX_PATH_RECEIVE_TIMEOUT;
+			timeout.tv_usec	= 0;
+		}
 
 	}
 

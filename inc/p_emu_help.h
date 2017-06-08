@@ -33,4 +33,12 @@ int p_emu_create_interfaces(slib_root_t *streams);
 
 int p_emu_start(slib_root_t* streams);
 
+
+struct p_emu_packet * p_emu_packet_init();
+void p_emu_packet_discard(struct p_emu_packet *packet);
+
+void p_emu_init_rx_path(void);
+void p_emu_post_rx_signal(void);
+void p_emu_wait_rx_signal(void);
+
 #endif /* PACKET_EMU_HELP_H_ */

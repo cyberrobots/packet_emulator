@@ -89,11 +89,17 @@ struct p_emu_socket_list {
 	int	max_sokcet_fd;
 };
 
-
+/* Configuration for Rx path */
 struct p_emu_rx_config {
 	slib_root_t *streams;
 };
 
+/* Configuration for Process path */
+struct p_emu_pr_config {
+	slib_root_t *streams;
+};
+
+/* Configuration for Tx path */
 struct p_emu_tx_config {
 	slib_root_t *streams;
 };
@@ -101,7 +107,7 @@ struct p_emu_tx_config {
 struct p_emu_packet {
 	slib_node_t node;
 	int length;		/* Payload length. */
-	struct timespec tv;	/* Time packet arrived. */
+	struct timespec arrival;/* Time packet arrived. */
 	struct timespec leave;	/* Time packet supposed to leave. */
 	uint8_t payload[0];	/* Payload */
 };

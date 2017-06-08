@@ -1,6 +1,7 @@
 #include "p_emu_libs.h"
 #include "p_emu_dbg.h"
 #include "p_emu_core.h"
+#include "p_emu_help.h"
 
 
 p_emu_dbg_t __debug_level =	DBG_INFO;
@@ -9,9 +10,12 @@ static struct p_emu_rx_config __p_emu_rx_config;
 
 static struct p_emu_tx_config __p_emu_tx_config;
 
+static struct p_emu_pr_config __p_emu_pr_config;
+
 
 void* p_emu_RxThread(void* params);
 void* p_emu_TxThread(void* params);
+void* p_emu_PrThread(void* params);
 
 
 /* Create socket descriptor ---------------------------------------------------/
@@ -152,15 +156,20 @@ int p_emu_start(slib_root_t* streams)
 	int err = 0;
 
 	pthread_t      p_emu_rx_ThreadId;
+	pthread_t      p_emu_pr_ThreadId;
 	pthread_t      p_emu_tx_ThreadId;
 
+	p_emu_init_rx_path();
+
 	memset(&__p_emu_rx_config,0,sizeof(struct p_emu_rx_config));
-
 	memset(&__p_emu_tx_config,0,sizeof(struct p_emu_tx_config));
+	memset(&__p_emu_pr_config,0,sizeof(struct p_emu_pr_config));
 
 	__p_emu_rx_config.streams = streams;
 
-	__p_emu_rx_config.streams = streams;
+	__p_emu_tx_config.streams = streams;
+
+	__p_emu_pr_config.streams = streams;
 
 	void 			**RxstatusID = NULL;	// Thread's Return status
 	err = pthread_create(&p_emu_rx_ThreadId,
@@ -174,6 +183,17 @@ int p_emu_start(slib_root_t* streams)
 		goto clean;
 	}
 
+	void 			**PrstatusID = NULL;	// Thread's Return status
+	err = pthread_create(&p_emu_pr_ThreadId,
+			     NULL,
+			     p_emu_PrThread,
+			     (void*)&__p_emu_pr_config);
+
+	if(err)
+	{
+		P_ERROR(DBG_ERROR,"Thread Init failed [%d]",err);
+		goto clean;
+	}
 
 	void 			**TxstatusID = NULL;	// Thread's Return status
 	err = pthread_create(&p_emu_tx_ThreadId,
@@ -190,10 +210,44 @@ int p_emu_start(slib_root_t* streams)
 
 clean:
 	pthread_join(p_emu_rx_ThreadId,RxstatusID);
+	pthread_join(p_emu_pr_ThreadId,PrstatusID);
 	pthread_join(p_emu_tx_ThreadId,TxstatusID);
+
 
 
 
 
 	return err;
 }
+
+
+/* Send Signal to process thread -------------------------------------------- */
+static sem_t __p_emu_rx_sem;
+
+void p_emu_init_rx_path(void)
+{
+	memset(&__p_emu_rx_sem,0,sizeof(sem_t));
+
+	if(sem_init(&__p_emu_rx_sem,0,0)<0)
+	{
+		P_ERROR(DBG_ERROR,"Error: sem_init() %s",strerror(errno));
+	}
+	return;
+}
+void p_emu_post_rx_signal(void)
+{
+	if(sem_post(&__p_emu_rx_sem)<0)
+	{
+		P_ERROR(DBG_ERROR,"Error: sem_post() %s",strerror(errno));
+	}
+	return;
+}
+void p_emu_wait_rx_signal(void)
+{
+	if(sem_wait(&__p_emu_rx_sem)<0)
+	{
+		P_ERROR(DBG_ERROR,"Error: sem_wait() %s",strerror(errno));
+	}
+	return;
+}
+/*----------------------------------------------------------------------------*/

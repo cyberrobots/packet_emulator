@@ -18,7 +18,10 @@
 #include <net/ethernet.h> /* the L2 protocols */
 #include <arpa/inet.h>
 
+#include <semaphore.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <assert.h>
 
 
 #include "slib.h"

@@ -39,4 +39,6 @@ void p_emu_init_tx_path(void);
 void p_emu_post_tx_signal(void);
 void p_emu_wait_tx_signal(void);
 
+int p_emu_timer_start(struct p_emu_stream *stream,struct p_emu_packet *pack);
+
 #endif /* PACKET_EMU_HELP_H_ */

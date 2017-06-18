@@ -4,50 +4,150 @@
 #include "p_emu_help.h"
 
 
-#if 0
-/* Arm Timer */
-
-if(p_emu_timer_start(stream,pack))
+void p_emu_update_tx_timers(void* data, slib_node_t* node)
 {
-	P_ERROR(DBG_WARN,"Failed starting timer!");
-	p_emu_packet_discard(pack);
-	return;
-}
-#endif
-
-void p_emu_update_tx_lists(void* data, slib_node_t* node)
-{
-	slib_node_t *pack_node = NULL;
+	struct p_emu_timer_list* TimList = (struct p_emu_timer_list*) data;
 	struct p_emu_stream *stream = (struct p_emu_stream *)node->data;
 
-	P_ERROR(DBG_INFO,"Packets for Tx_____________[%d]",
-		slib_get_list_cont(stream->tx_list));
-
-
-	pack_node = slib_return_first(stream->tx_list);
-	if(!pack_node){
-		/*Since we are waiting for rx signal each time,
-		this case should never happen */
-		P_ERROR(DBG_WARN,"Error, No packets!!!");
-		assert(pack_node);
+	if(!(stream->delay.flags & DELAY_IS_ENABLED)){
 		return;
 	}
 
-	struct p_emu_packet *packet = (struct p_emu_packet *)pack_node->data;
+	/* Store the biggest socket descriptor. */
+	if(stream->timers.tx_timer > TimList->max_timer_fd){
+		TimList->max_timer_fd = stream->timers.tx_timer;
+		P_ERROR(DBG_INFO,"Updating Max Timer descriptor [%d]",
+			stream->timers.tx_timer);
+	}
 
+	P_ERROR(DBG_INFO,"Import Socket (%d)",stream->timers.tx_timer);
+
+	/* Import the socket descritor to the fd_set */
+	FD_CLR(stream->timers.tx_timer,&TimList->timerfds);
+	FD_SET(stream->timers.tx_timer,&TimList->timerfds);
+
+	return;
+}
+
+void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
+{
+
+	slib_node_t *pack_node = NULL;
+	struct p_emu_packet *packet = NULL;
+	int len = -1;
+
+	pack_node = slib_return_first(stream->tx_list);
+	if(!pack_node){
+		/* this stream has no packets ready for tx */
+		return;
+	}
+
+	packet = (struct p_emu_packet *)pack_node->data;
+
+	P_ERROR(DBG_INFO,"Sending packet [%d]",packet->length);
+
+	len = sendto(stream->config.tx_iface_fd, ( const void *)packet->payload,
+		     (size_t)packet->length,0,NULL, 0);
+
+	if(len!=packet->length)
+	{
+		P_ERROR(DBG_WARN,"Failed Sending packet [%d]",len);
+		assert(0);
+	}
 
 	p_emu_packet_discard(packet);
 
+
+	pack_node = NULL; packet = NULL;
+	pack_node = slib_show_first(stream->tx_list);
+	/* If no first node exists, stop timer otherwise update */
+	if(!pack_node)
+	{
+		timerfd_settime(stream->timers.tx_timer,0,NULL,NULL);
+	}else{
+		/* Update timer. */
+		packet = (struct p_emu_packet *)pack_node->data;
+		if(p_emu_timer_start(stream,packet)){
+			P_ERROR(DBG_ERROR,"Timer Failed!");
+		}
+	}
+
 	return;
 }
 
-
-void p_emu_update_tx_timers(void* data, slib_node_t* node)
+void p_emu_tx_timers(void* data, slib_node_t* node)
 {
+	struct p_emu_stream *stream = (struct p_emu_stream *)node->data;
+	uint64_t exp = 0; int s = 0;
 
+	if(!(stream->delay.flags & DELAY_IS_ENABLED)){
+		P_ERROR(DBG_INFO,"No Delays Here....");
+		return;
+	}
+
+	s = read(stream->timers.tx_timer, &exp, sizeof(uint64_t));
+	if (s != sizeof(uint64_t))
+	{
+		P_ERROR(DBG_ERROR,"Descriptor![%d]",stream->timers.tx_timer);
+		P_ERROR(DBG_ERROR,"Timer read Failed! [%d]",s);
+		P_ERROR(DBG_ERROR,"Timer read Failed! [%lu]",exp);
+		//assert(0);
+	}
+	else
+	{
+		/* Tx packet */
+		p_emu_tx_delayed_packet(stream);
+	}
 	return;
 }
 
+
+void* p_emu_TxThread_Delayed(void* params)
+{
+	struct p_emu_tx_config* cfg = (struct p_emu_tx_config*)params;
+	slib_root_t *streams = cfg->streams;
+
+	struct p_emu_timer_list TimList;
+	struct timeval SelectTimeout;
+
+
+	memset(&TimList,0,sizeof(struct p_emu_timer_list));
+	FD_ZERO(&TimList.timerfds);
+	TimList.max_timer_fd = -1;
+
+	/* Update FD_SET */
+	slib_func_exec (streams,&TimList,p_emu_update_tx_timers);
+
+	SelectTimeout.tv_sec	= P_EMU_RX_PATH_TX_TIMER_TIMEOUT;
+	SelectTimeout.tv_usec	= 0;
+
+	while(1)
+	{
+		if(select(TimList.max_timer_fd + 1,&TimList.timerfds,
+				NULL,NULL,&SelectTimeout)>=0)
+		{
+			slib_func_exec(streams,NULL,p_emu_tx_timers);
+		}
+		else
+		{
+			P_ERROR(DBG_ERROR,"___SELECT_ERROR___");
+		}
+
+		{
+			/* Reset Select */
+			slib_func_exec (streams,
+					&TimList,p_emu_update_tx_timers);
+
+			SelectTimeout.tv_sec	= P_EMU_RX_PATH_TX_TIMER_TIMEOUT;
+			SelectTimeout.tv_usec	= 0;
+		}
+	}
+
+
+	return NULL;
+}
+
+/* Non Delayed Streams ------------------------------------------------------ */
 
 void p_emu_tx_non_delayed_packet(void* data, slib_node_t* node)
 {
@@ -89,8 +189,6 @@ void* p_emu_TxThread(void* params)
 
 	struct p_emu_tx_config* cfg = (struct p_emu_tx_config*)params;
 	slib_root_t *streams = cfg->streams;
-
-	streams = streams;
 
 	while(1)
 	{

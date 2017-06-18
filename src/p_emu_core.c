@@ -16,6 +16,7 @@ static struct p_emu_pr_config __p_emu_pr_config;
 void* p_emu_RxThread(void* params);
 void* p_emu_TxThread(void* params);
 void* p_emu_PrThread(void* params);
+void* p_emu_TxThread_Delayed(void* params);
 
 
 /* Create socket descriptor ---------------------------------------------------/
@@ -158,6 +159,7 @@ int p_emu_start(slib_root_t* streams)
 	pthread_t      p_emu_rx_ThreadId;
 	pthread_t      p_emu_pr_ThreadId;
 	pthread_t      p_emu_tx_ThreadId;
+	pthread_t      p_emu_tx_ThreadId_Delay;
 
 	p_emu_init_rx_path();
 
@@ -210,10 +212,23 @@ int p_emu_start(slib_root_t* streams)
 	}
 
 
+	void 		**TxstatusID_Delay = NULL;	// Thread's Return status
+	err = pthread_create(&p_emu_tx_ThreadId_Delay,
+			     NULL,
+			     p_emu_TxThread_Delayed,
+			     (void*)&__p_emu_tx_config);
+
+	if(err)
+	{
+		P_ERROR(DBG_ERROR,"Thread Init failed [%d]",err);
+		goto clean;
+	}
+
 clean:
 	pthread_join(p_emu_rx_ThreadId,RxstatusID);
 	pthread_join(p_emu_pr_ThreadId,PrstatusID);
 	pthread_join(p_emu_tx_ThreadId,TxstatusID);
+	pthread_join(p_emu_tx_ThreadId_Delay,TxstatusID_Delay);
 
 
 

@@ -108,6 +108,11 @@ struct p_emu_socket_list {
 	int	max_sokcet_fd;
 };
 
+struct p_emu_timer_list{
+	fd_set	timerfds;
+	int	max_timer_fd;
+};
+
 /* Configuration for Rx path */
 struct p_emu_rx_config {
 	slib_root_t *streams;

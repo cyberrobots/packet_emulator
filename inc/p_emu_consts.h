@@ -19,6 +19,8 @@
  /* Maximum receive timeout on the Rx path (seconds) */
 #define P_EMU_RX_PATH_RECEIVE_TIMEOUT (10)
 
+#define P_EMU_RX_PATH_TX_TIMER_TIMEOUT (10)
+
 
 #define P_EMU_JUMBO_ETH_FRAME_SIZE	(65536)
 

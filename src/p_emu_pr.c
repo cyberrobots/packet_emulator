@@ -203,14 +203,27 @@ int pack_emu_sort_insert(slib_node_t* new, slib_node_t* tmp,
 int p_emu_timer_start(struct p_emu_stream *stream,struct p_emu_packet *pack)
 {
 	struct itimerspec interval;
+	int stat = -1;
 
-	// Set time of expire.
+	if(!stream || !pack){
+		P_ERROR(DBG_ERROR,"Parameters");
+		return -1;
+	}
+
+	/* Stop timer */
+	stat = timerfd_settime(stream->timers.tx_timer,0,NULL,NULL);
+	if(stat < 0)
+	{
+		P_ERROR(DBG_WARN,"Failed to reset [%d]",stat);
+	}
+
+	/* Set and Arm timer */
 	interval.it_interval.tv_sec  = 0;
 	interval.it_interval.tv_nsec = 0;
 	interval.it_value.tv_sec  = pack->leave.tv_sec;
 	interval.it_value.tv_nsec = pack->leave.tv_nsec;
 
-	int stat = timerfd_settime(stream->timers.tx_timer,
+	stat = timerfd_settime(stream->timers.tx_timer,
 				   TFD_TIMER_ABSTIME,&interval,NULL);
 	if(stat < 0)
 	{
@@ -218,7 +231,7 @@ int p_emu_timer_start(struct p_emu_stream *stream,struct p_emu_packet *pack)
 		return -1;
 	}
 
-	P_ERROR(DBG_INFO,"Timer started______[%d]____",stream->timers.tx_timer);
+	P_ERROR(DBG_INFO,"Timer __[%d]__ started!",stream->timers.tx_timer);
 
 
 	return 0;
@@ -226,6 +239,8 @@ int p_emu_timer_start(struct p_emu_stream *stream,struct p_emu_packet *pack)
 
 void p_emu_process_received(void* data, slib_node_t* node)
 {
+	struct p_emu_packet *pack = NULL;
+	slib_node_t *pack_node = NULL;
 	struct p_emu_stream *stream = (struct p_emu_stream *)node->data;
 
 
@@ -239,7 +254,7 @@ void p_emu_process_received(void* data, slib_node_t* node)
 		stream->config.rx_iface_fd,
 		slib_get_list_cont(stream->rx_list));
 
-	slib_node_t *pack_node = slib_return_first(stream->rx_list);
+	pack_node = slib_return_first(stream->rx_list);
 
 	if(!pack_node){
 		/*Since we are waiting for rx signal each time,
@@ -249,7 +264,7 @@ void p_emu_process_received(void* data, slib_node_t* node)
 		return;
 	}
 
-	struct p_emu_packet *pack = (struct p_emu_packet *)pack_node->data;
+	pack = (struct p_emu_packet *)pack_node->data;
 
 	{
 		/* Packet process */
@@ -291,6 +306,21 @@ void p_emu_process_received(void* data, slib_node_t* node)
 						"__Importing frame failed!__");
 					p_emu_packet_discard(pack);
 					return;
+				}
+
+				pack_node = NULL; pack = NULL;
+
+				pack_node = slib_show_first(stream->tx_list);
+				if(!pack_node){
+					assert(pack_node);
+				}
+
+				pack = (struct p_emu_packet *)pack_node->data;
+
+				/* Start or just update timer. */
+
+				if(p_emu_timer_start(stream,pack)){
+					P_ERROR(DBG_ERROR,"Timer Failed!");
 				}
 
 			}else{

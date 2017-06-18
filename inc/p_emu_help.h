@@ -23,22 +23,20 @@ typedef struct
 
 /* Prototype declaration */
 
-void p_emu_usage(void);
-void p_emu_version( void );
-void p_emu_interfaces( void );
+struct p_emu_packet * p_emu_packet_init();
+
+void p_emu_packet_discard(struct p_emu_packet *packet);
 
 int p_emu_import_settings(const char *filename, slib_root_t *streams);
 
 int p_emu_create_interfaces(slib_root_t *streams);
 
-int p_emu_start(slib_root_t* streams);
-
-
-struct p_emu_packet * p_emu_packet_init();
-void p_emu_packet_discard(struct p_emu_packet *packet);
-
 void p_emu_init_rx_path(void);
 void p_emu_post_rx_signal(void);
 void p_emu_wait_rx_signal(void);
+
+void p_emu_init_tx_path(void);
+void p_emu_post_tx_signal(void);
+void p_emu_wait_tx_signal(void);
 
 #endif /* PACKET_EMU_HELP_H_ */

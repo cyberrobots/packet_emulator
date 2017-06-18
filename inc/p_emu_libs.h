@@ -23,6 +23,9 @@
 #include <fcntl.h>
 #include <assert.h>
 
+#include <sys/time.h>
+#include <sys/timerfd.h>
+
 
 #include "slib.h"
 

@@ -21,7 +21,7 @@ typedef enum{
 
 char* p_emu_dbg_str(p_emu_dbg_t dbg);
 
-
+#ifndef NDEBUG
 #define P_ERROR(l,m,...) \
     extern p_emu_dbg_t __debug_level; \
     do{	\
@@ -35,7 +35,9 @@ char* p_emu_dbg_str(p_emu_dbg_t dbg);
 	}	\
     }while(0);
 
-
+#else
+#define P_ERROR(l,m,...)  ;
+#endif
 
 #endif /* PACKET_EMU_DBG_H_ */
 

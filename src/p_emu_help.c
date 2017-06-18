@@ -95,6 +95,7 @@ void p_emu_interfaces( void )
 #define STREAM_SRC_MAC		"src_mac="
 #define STREAM_IN_IFACE		"in_iface="
 #define STREAM_OUT_IFACE	"out_iface="
+#define STREA_LOSS_PERCENTAGE	"loss_per="
 
 /* Configuration Callbacks */
 #define P_EMU_IMP_FUNC(m)	void(m)(struct p_emu_stream *stream,char* buffer,int len)
@@ -115,7 +116,7 @@ P_EMU_IMP_FUNC(import_output_iface);
 //P_EMU_IMP_FUNC(import_static);
 //P_EMU_IMP_FUNC(import_pareto);
 //P_EMU_IMP_FUNC(import_pareto_2);
-//P_EMU_IMP_FUNC(import_loss);
+P_EMU_IMP_FUNC(import_loss);
 
 
 /* Filter Table ------------------------------------------------------------- */
@@ -126,13 +127,15 @@ static p_emu_import_entry_t p_emu_import_table[]=
 	{STREAM_SRC_MAC , import_src_mac },
 	{STREAM_IN_IFACE , import_input_iface },
 	{STREAM_OUT_IFACE , import_output_iface },
+	{STREA_LOSS_PERCENTAGE,import_loss },
 };
 
 #define NUM_OF_IMPORT_PARAMS ( TABLE_SIZE_OF(p_emu_import_table) )
 #define NUM_OF_MAX_VAR  NUM_OF_FILTERS * 2
 
 
-
+/* Searches for the "param" string and import any float after that till the
+end of line or the MAX_FL_VAL or the EOF or space */
 double getFloat(const char* buf, const char* param, size_t len) {
 
 #define MAX_FL_VAL (32)
@@ -162,7 +165,8 @@ double getFloat(const char* buf, const char* param, size_t len) {
         return atof(value);
 }
 
-
+/* Searches for the "param" string and import any integer after that till the
+end of line or the MAX_INT_VAL or the EOF or space */
 int getInteger(const char* buf,const char* param,size_t len) {
 
 #define MAX_INT_VAL (12)
@@ -336,6 +340,17 @@ void import_dst_mac(struct p_emu_stream *stream,char* buffer,int len){
 	return;
 }
 
+void import_loss(struct p_emu_stream *stream,char* buffer,int len){
+
+	stream->loss.percentage = getFloat(buffer,"",0);
+
+	P_ERROR(DBG_INFO,"Loss percentage %f",stream->loss.percentage);
+
+	stream->loss.flags |= LOSS_IS_ENABLED;
+}
+
+
+
 int p_emu_CheckStreamName(void* data,  slib_node_t * node)
 {
 	struct p_emu_stream *Stream = (struct p_emu_stream *)node->data;
@@ -400,6 +415,12 @@ struct p_emu_stream * p_emu_StreamInit (char* stream_name)
 	Stream->config.rx_iface_fd = P_EMU_UNINITIALIZED;
 	Stream->config.tx_iface_fd = P_EMU_UNINITIALIZED;
 
+	Stream->timers.tx_timer = timerfd_create(CLOCK_REALTIME,TFD_NONBLOCK);
+	if(Stream->timers.tx_timer < 0){
+		P_ERROR(DBG_ERROR,"Timer failed [%d]",Stream->timers.tx_timer);
+		return NULL;
+	}
+
 	/* Initialize stream's rx_list and tx_list */
 
 	Stream->rx_list = slib_list_init();
@@ -409,6 +430,7 @@ struct p_emu_stream * p_emu_StreamInit (char* stream_name)
 	Stream->tx_list_max_size = P_EMU_MAX_LIST_SIZE;
 
 	if(!Stream->rx_list || !Stream->tx_list){
+		P_ERROR(DBG_ERROR,"List init failed");
 		memset(Stream,0,sizeof(struct p_emu_stream));
 		free(Stream);
 	}

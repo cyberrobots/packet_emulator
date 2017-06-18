@@ -139,7 +139,7 @@ int p_emu_create_interfaces(slib_root_t *streams)
 	return error;
 }
 
-int p_emu_stop(uint8_t reason)
+int p_emu_stop(void* params)
 {
 	int err = 0;
 	/* TODO : terminate packet emulator */
@@ -160,6 +160,8 @@ int p_emu_start(slib_root_t* streams)
 	pthread_t      p_emu_tx_ThreadId;
 
 	p_emu_init_rx_path();
+
+	p_emu_init_tx_path();
 
 	memset(&__p_emu_rx_config,0,sizeof(struct p_emu_rx_config));
 	memset(&__p_emu_tx_config,0,sizeof(struct p_emu_tx_config));
@@ -220,6 +222,32 @@ clean:
 	return err;
 }
 
+struct p_emu_packet * p_emu_packet_init()
+{
+	struct p_emu_packet *pack = malloc(sizeof(struct p_emu_packet) +
+					   P_EMU_MAX_INPUT_BUFFER_SIZE);
+	if(!pack)
+		return NULL;
+
+	memset(pack,0,sizeof(struct p_emu_packet));
+
+	P_ERROR(DBG_INFO,"New packet______(%p)",pack);
+	pack->node.data = pack;
+	P_ERROR(DBG_INFO,"New packet______(%p)",pack->node.data);
+
+	return pack;
+}
+
+void p_emu_packet_discard(struct p_emu_packet *packet)
+{
+	if(!packet)
+	{
+		P_ERROR(DBG_ERROR,"Invalid Pakcet");
+		return;
+	}
+	free(packet);
+	packet = (struct p_emu_packet *)NULL;
+}
 
 /* Send Signal to process thread -------------------------------------------- */
 static sem_t __p_emu_rx_sem;
@@ -250,4 +278,36 @@ void p_emu_wait_rx_signal(void)
 	}
 	return;
 }
+
+/* Send Signal to transmit thread ------------------------------------------- */
+static sem_t __p_emu_tx_sem;
+
+void p_emu_init_tx_path(void)
+{
+	memset(&__p_emu_tx_sem,0,sizeof(sem_t));
+
+	if(sem_init(&__p_emu_tx_sem,0,0)<0)
+	{
+		P_ERROR(DBG_ERROR,"Error: sem_init() %s",strerror(errno));
+	}
+	return;
+}
+void p_emu_post_tx_signal(void)
+{
+	if(sem_post(&__p_emu_tx_sem)<0)
+	{
+		P_ERROR(DBG_ERROR,"Error: sem_post() %s",strerror(errno));
+	}
+	return;
+}
+void p_emu_wait_tx_signal(void)
+{
+	if(sem_wait(&__p_emu_tx_sem)<0)
+	{
+		P_ERROR(DBG_ERROR,"Error: sem_wait() %s",strerror(errno));
+	}
+	return;
+}
+
+
 /*----------------------------------------------------------------------------*/

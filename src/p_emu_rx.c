@@ -3,34 +3,6 @@
 #include "p_emu_core.h"
 #include "p_emu_help.h"
 
-struct p_emu_packet * p_emu_packet_init()
-{
-	struct p_emu_packet *pack = malloc(sizeof(struct p_emu_packet) +
-					   P_EMU_MAX_INPUT_BUFFER_SIZE);
-	if(!pack)
-		return NULL;
-
-	memset(pack,0,sizeof(struct p_emu_packet));
-
-	P_ERROR(DBG_INFO,"New packet______(%p)",pack);
-	pack->node.data = pack;
-	P_ERROR(DBG_INFO,"New packet______(%p)",pack->node.data);
-
-	return pack;
-}
-
-
-void p_emu_packet_discard(struct p_emu_packet *packet)
-{
-	if(!packet)
-	{
-		P_ERROR(DBG_ERROR,"Invalid Pakcet");
-		return;
-	}
-	free(packet);
-	packet = (struct p_emu_packet *)NULL;
-}
-
 
 
 void p_emu_rx_sock_list_update(void* data, slib_node_t* node)
@@ -85,8 +57,10 @@ void p_emu_rx_packet(void* data, slib_node_t* node)
 
 		if(slib_list_add_last_node
 				(stream->rx_list,&pack->node)!=LIST_OP_SUCCESS){
-			P_ERROR(DBG_ERROR,"Importing frame failed!!!");
-			assert(0);
+			P_ERROR(DBG_WARN,"Importing frame failed!!!");
+
+			p_emu_packet_discard(pack);
+
 			return;
 		}
 

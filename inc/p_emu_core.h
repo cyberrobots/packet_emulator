@@ -17,12 +17,12 @@ struct p_emu_filter_key {
 #define filter_dst_mac payload[0];/*Size ETHER_ADDR_LEN*/
 #define filter_src_mac payload[P_EMU_ETHER_ADDR_LEN];/*Size ETHER_ADDR_LEN*/
 #define filter_proto   payload[2 * P_EMU_ETHER_ADDR_LEN];/*Size ETHER_TYPE_LEN*/
-	uint8_t 	payload[1600];
+	uint8_t 	payload[P_EMU_MAX_INPUT_BUFFER_SIZE];
 }__attribute__ ((__packed__));
 
 struct p_emu_filter_mask {
 	uint16_t 	length;
-	uint8_t		payload[1600];
+	uint8_t		payload[P_EMU_MAX_INPUT_BUFFER_SIZE];
 }__attribute__ ((__packed__));
 
 enum p_emu_filter_flags {
@@ -50,6 +50,23 @@ struct p_emu_delay_config {
 	uint32_t	flags;
 };
 
+/* Loss --------------------------------------------------------------------- */
+
+enum p_emu_loss_flags {
+	LOSS_IS_ENABLED = 1,
+};
+
+struct p_emu_loss_config {
+	uint32_t	flags;
+	float		percentage;
+};
+
+/* Timers ------------------------------------------------------------------- */
+struct		p_emu_time_config{
+	int tx_timer;
+};
+
+
 /* Stream Config ------------------------------------------------------------ */
 
 struct p_emu_stream_config {
@@ -75,9 +92,11 @@ struct p_emu_stream_config {
 struct p_emu_stream {
 	char		stream_name[P_EMU_STREAM_NAME_LEN];
 	uint16_t	stream_name_len;
-	struct		p_emu_stream_config config;
-	struct		p_emu_filter_config filter;
-	struct		p_emu_delay_config delay;
+	struct		p_emu_stream_config	config;	/*stream settings */
+	struct		p_emu_filter_config	filter;	/*filtering settings */
+	struct		p_emu_delay_config	delay; 	/*delay settings */
+	struct		p_emu_loss_config	loss;	/*packet loss settings*/
+	struct		p_emu_time_config	timers;	/* Streams timers */
 	slib_root_t	*rx_list;
 	uint16_t	rx_list_max_size;
 	slib_root_t	*tx_list;
@@ -112,7 +131,16 @@ struct p_emu_packet {
 	uint8_t payload[0];	/* Payload */
 };
 
-
+/* return packet emulator usage */
+void p_emu_usage(void);
+/* return packet emulator version */
+void p_emu_version( void );
+/* return list of accessible interfaces */
+void p_emu_interfaces( void );
+/* Start packet emulator*/
+int p_emu_start(slib_root_t* streams);
+/* Terminate packet emulator */
+int p_emu_stop(void* params);
 
 
 #endif /* PACKET_EMU_CORE_H_ */

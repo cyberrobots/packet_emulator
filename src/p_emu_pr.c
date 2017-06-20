@@ -67,11 +67,11 @@ int p_emu_filter_packet(struct p_emu_stream *stream, struct p_emu_packet *pack)
 				stream->filter.filter_key.payload,
 				stream->filter.filter_mask.payload,
 				stream->filter.filter_mask.length)){
-		P_ERROR(DBG_INFO,"P_EMU_KEEP_PACKET");
+		P_ERROR(DBG_INFO,"P_EMU_KEEP_PACKET___p[%p]",pack);
 		return P_EMU_KEEP_PACKET;
 	}
 
-	P_ERROR(DBG_INFO,"P_EMU_DISCARD_PACKET");
+	P_ERROR(DBG_INFO,"P_EMU_DISCARD_PACKET___p[%p]",pack);
 	return P_EMU_DISCARD_PACKET;
 }
 
@@ -249,11 +249,6 @@ void p_emu_process_received(void* data, slib_node_t* node)
 		return;
 	}
 
-	P_ERROR(DBG_WARN,"Stream [%s]__Sock[%d] Packets ready (%d)",
-		stream->stream_name,
-		stream->config.rx_iface_fd,
-		slib_get_list_cont(stream->rx_list));
-
 	pack_node = slib_return_first(stream->rx_list);
 
 	if(!pack_node){
@@ -360,8 +355,6 @@ void* p_emu_PrThread(void* params)
 	{
 		/* wait a generic rx signal */
 		p_emu_wait_rx_signal();
-
-		P_ERROR(DBG_WARN,"_____PrThread_spin____");
 
 		/* Check every stream for packets,
 		TODO :  Change that for efficiency */

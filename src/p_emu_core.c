@@ -253,9 +253,7 @@ struct p_emu_packet * p_emu_packet_init()
 
 	memset(pack,0,sizeof(struct p_emu_packet));
 
-	P_ERROR(DBG_INFO,"New packet______(%p)",pack);
 	pack->node.data = pack;
-	P_ERROR(DBG_INFO,"New packet______(%p)",pack->node.data);
 
 	return pack;
 }

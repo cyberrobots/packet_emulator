@@ -49,11 +49,12 @@ void p_emu_rx_packet(void* data, slib_node_t* node)
 	{
 		clock_gettime(CLOCK_REALTIME,&pack->arrival);
 
-		P_ERROR(DBG_INFO,"SOCK-->(%d) Length (%d) Time [%lu]s [%lu]ns ",
+		P_ERROR(DBG_INFO,"S(%d) Len (%d) Time [%lu]s [%lu]ns ___p[%p]",
 			stream->config.rx_iface_fd,
 			pack->length,
 			pack->arrival.tv_sec,
-		        pack->arrival.tv_nsec);
+		        pack->arrival.tv_nsec,
+		        pack);
 
 		if(slib_list_add_last_node
 				(stream->rx_list,&pack->node)!=LIST_OP_SUCCESS){

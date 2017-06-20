@@ -9,16 +9,16 @@ char* p_emu_dbg_str(p_emu_dbg_t dbg)
 	switch(dbg)
 	{
 		case p_emu_dbg_0:
-			return "DBG_ERROR";
+			return "ERROR";
 			break;
 		case p_emu_dbg_1:
-			return "DBG_WARN";
+			return "WARN";
 			break;
 		case p_emu_dbg_2:
-			return "DBG_INFO";
+			return "INFO";
 			break;
 		default:
-			return "DBG_INVALID";
+			return "INVALID";
 			break;
 	}
 

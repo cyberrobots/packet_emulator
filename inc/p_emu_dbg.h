@@ -22,6 +22,28 @@ typedef enum{
 char* p_emu_dbg_str(p_emu_dbg_t dbg);
 
 #ifndef NDEBUG
+#ifdef TIME_LOG
+#define P_ERROR(l,m,...) \
+	extern struct timeval p_emu_time_start; \
+	extern struct timeval p_emu_time_current; \
+	extern p_emu_dbg_t __debug_level; \
+	do{	\
+        if(p_emu_time_start.tv_sec==0 && p_emu_time_start.tv_usec==0) \
+        {gettimeofday(&p_emu_time_start,NULL); } \
+        gettimeofday(&p_emu_time_current,NULL); \
+	if ( l <= __debug_level )	\
+	{	\
+	fprintf(stdout,"[%.0lld][%s][%d][%s]"m"\n", \
+	((p_emu_time_current.tv_sec-p_emu_time_start.tv_sec)*1000000LL+ \
+		p_emu_time_current.tv_usec-p_emu_time_start.tv_usec), \
+	p_emu_dbg_str(__debug_level), \
+	__LINE__, \
+	__func__, \
+	##__VA_ARGS__); \
+	}	\
+}while(0);
+
+#else
 #define P_ERROR(l,m,...) \
     extern p_emu_dbg_t __debug_level; \
     do{	\
@@ -34,7 +56,7 @@ char* p_emu_dbg_str(p_emu_dbg_t dbg);
 		##__VA_ARGS__); \
 	}	\
     }while(0);
-
+#endif
 #else
 #define P_ERROR(l,m,...)  ;
 #endif

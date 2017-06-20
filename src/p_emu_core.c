@@ -6,6 +6,13 @@
 
 p_emu_dbg_t __debug_level =	DBG_INFO;
 
+#ifdef TIME_LOG
+long long p_emu_time_elapsed = 0;
+struct timeval p_emu_time_start = {.tv_sec=0,.tv_usec=0};
+struct timeval p_emu_time_current = {.tv_sec=0,.tv_usec=0};
+#endif
+
+
 static struct p_emu_rx_config __p_emu_rx_config;
 
 static struct p_emu_tx_config __p_emu_tx_config;

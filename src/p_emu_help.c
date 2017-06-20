@@ -95,7 +95,8 @@ void p_emu_interfaces( void )
 #define STREAM_SRC_MAC		"src_mac="
 #define STREAM_IN_IFACE		"in_iface="
 #define STREAM_OUT_IFACE	"out_iface="
-#define STREA_LOSS_PERCENTAGE	"loss_per="
+#define STREAM_LOSS_PERCENTAGE	"loss_per="
+#define STREAM_STATIC_DELAY	"static_delay="
 
 /* Configuration Callbacks */
 #define P_EMU_IMP_FUNC(m)	void(m)(struct p_emu_stream *stream,char* buffer,int len)
@@ -117,6 +118,7 @@ P_EMU_IMP_FUNC(import_output_iface);
 //P_EMU_IMP_FUNC(import_pareto);
 //P_EMU_IMP_FUNC(import_pareto_2);
 P_EMU_IMP_FUNC(import_loss);
+P_EMU_IMP_FUNC(import_static_delay);
 
 
 /* Filter Table ------------------------------------------------------------- */
@@ -127,7 +129,8 @@ static p_emu_import_entry_t p_emu_import_table[]=
 	{STREAM_SRC_MAC , import_src_mac },
 	{STREAM_IN_IFACE , import_input_iface },
 	{STREAM_OUT_IFACE , import_output_iface },
-	{STREA_LOSS_PERCENTAGE,import_loss },
+	{STREAM_LOSS_PERCENTAGE,import_loss },
+	{STREAM_STATIC_DELAY,import_static_delay },
 };
 
 #define NUM_OF_IMPORT_PARAMS ( TABLE_SIZE_OF(p_emu_import_table) )
@@ -349,6 +352,14 @@ void import_loss(struct p_emu_stream *stream,char* buffer,int len){
 	stream->loss.flags |= LOSS_IS_ENABLED;
 }
 
+void import_static_delay(struct p_emu_stream *stream,char* buffer,int len){
+
+	stream->delay.st_delay.d.tv_sec = 10;
+	stream->delay.st_delay.d.tv_nsec = 0;
+
+	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_STATIC);
+	return;
+}
 
 
 int p_emu_CheckStreamName(void* data,  slib_node_t * node)

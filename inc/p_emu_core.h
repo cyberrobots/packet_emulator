@@ -40,14 +40,19 @@ struct p_emu_filter_config {
 /* Delay -------------------------------------------------------------------- */
 
 enum p_emu_delay_flags {
-	DELAY_IS_ENABLED = 1,
-	DELAY_IS_UNIFORM  = 1 << 1,
-	DELAY_IS_GAUSSIAN = 1 << 2,
+	DELAY_IS_ENABLED 	= 1,
+	DELAY_IS_STATIC		= 1 << 1,
+	DELAY_IS_UNIFORM	= 1 << 2,
+	DELAY_IS_GAUSSIAN	= 1 << 3,
 };
 
+struct p_emu_static_delay {
+	struct timespec d;
+};
 
 struct p_emu_delay_config {
 	uint32_t	flags;
+	struct p_emu_static_delay st_delay;
 };
 
 /* Loss --------------------------------------------------------------------- */

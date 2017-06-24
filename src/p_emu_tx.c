@@ -44,8 +44,6 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
 
 	packet = (struct p_emu_packet *)pack_node->data;
 
-	P_ERROR(DBG_INFO,"Sending packet [%d]",packet->length);
-
 	len = sendto(stream->config.tx_iface_fd, ( const void *)packet->payload,
 		     (size_t)packet->length,0,NULL, 0);
 
@@ -55,6 +53,22 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
 		assert(0);
 	}
 
+#ifdef PACK_EMU_INTERVAL_SHOW
+	struct timespec leaving;
+	memset(&leaving,0,sizeof(struct timespec));
+	clock_gettime(CLOCK_REALTIME,&leaving);
+
+	P_ERROR(DBG_INFO,"Timer[%d]___Sending__Tx_S(%d) Len (%d) Time [%lu]s [%lu]ns ___p[%p]",
+		stream->timers.tx_timer,
+		stream->config.tx_iface_fd,
+		packet->length,
+		leaving.tv_sec,
+		leaving.tv_nsec,
+		packet);
+	printf("Interval[%lu]<<<<<<<<<<<<<<<<<\r\n",
+		(leaving.tv_sec-packet->arrival.tv_sec));
+#endif
+
 	p_emu_packet_discard(packet);
 
 
@@ -63,8 +77,13 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
 	/* If no first node exists, stop timer otherwise update */
 	if(!pack_node)
 	{
-		timerfd_settime(stream->timers.tx_timer,0,NULL,NULL);
+		//timerfd_settime(stream->timers.tx_timer,0,NULL,NULL);
+
+		P_ERROR(DBG_ERROR,"______NO____PACKET_____");
 	}else{
+
+		P_ERROR(DBG_ERROR,"______Re-Arm Timer_____");
+
 		/* Update timer. */
 		packet = (struct p_emu_packet *)pack_node->data;
 		if(p_emu_timer_start(stream,packet)){
@@ -126,6 +145,9 @@ void* p_emu_TxThread_Delayed(void* params)
 		if(select(TimList.max_timer_fd + 1,&TimList.timerfds,
 				NULL,NULL,&SelectTimeout)>=0)
 		{
+
+			P_ERROR(DBG_ERROR,"___Timer_Select___");
+
 			slib_func_exec(streams,NULL,p_emu_tx_timers);
 		}
 		else
@@ -178,6 +200,24 @@ void p_emu_tx_non_delayed_packet(void* data, slib_node_t* node)
 		P_ERROR(DBG_WARN,"Failed Sending packet [%d]",len);
 		assert(0);
 	}
+
+
+#ifdef PACK_EMU_INTERVAL_SHOW
+	struct timespec leaving;
+	memset(&leaving,0,sizeof(struct timespec));
+	clock_gettime(CLOCK_REALTIME,&leaving);
+
+	P_ERROR(DBG_INFO,"Timer[%d]___Sending__Tx_S(%d) Len (%d) Time [%lu]s [%lu]ns ___p[%p]",
+		stream->timers.tx_timer,
+		stream->config.tx_iface_fd,
+		packet->length,
+		leaving.tv_sec,
+		leaving.tv_nsec,
+		packet);
+	printf("Interval[%lu][%lu]<<<<<<<<<<<<<<<<<\r\n",
+	       (leaving.tv_sec-packet->arrival.tv_sec),
+	       (leaving.tv_nsec-packet->arrival.tv_nsec));
+#endif
 
 	p_emu_packet_discard(packet);
 

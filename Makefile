@@ -4,7 +4,7 @@
 
 CC 		= gcc
 LD          	= gcc
-CFLAGS  	= -g -O0 -Wall -D_REENTRANT -DTIME_LOG 
+CFLAGS  	= -g -O0 -Wall -D_REENTRANT -DPACK_EMU_INTERVAL_SHOW
 LDFLAGS 	= -lpthread -lrt -lm
 OUTPUTFILE      = p_emu.bin
 

@@ -83,17 +83,19 @@ int _p_emu_create_socket(const char* interface,uint8_t rx_tx)
 	memset(&s_addr,0,sizeof(s_addr));
 
 	s_addr.sll_family 	= PF_PACKET;
-	s_addr.sll_hatype 	= 1;
-	s_addr.sll_halen  	= ETH_ALEN;
+	s_addr.sll_protocol	= htons(ETH_P_ALL);
 	s_addr.sll_ifindex 	= ifindex;
-	s_addr.sll_pkttype 	= PACKET_OTHERHOST;
-	s_addr.sll_protocol	= htons(ETH_P_ALL);		//must check this variables
+	s_addr.sll_hatype 	= ARPHRD_ETHER;
+	s_addr.sll_pkttype 	=
+		(PACKET_OTHERHOST | PACKET_HOST |
+		PACKET_BROADCAST | PACKET_MULTICAST);
+	s_addr.sll_halen  	= ETH_ALEN;
 	s_addr.sll_addr[6]	= 0x00;
 	s_addr.sll_addr[7]	= 0x00;
 
+
 	// Bind socket to the interface.
 	bind(sockid,(const struct sockaddr *)&s_addr,sizeof(struct sockaddr_ll));
-
 
 	memset(&ifr,0,sizeof(ifr));
 	strncpy(ifr.ifr_name,(const char*)(interface),strlen(interface));
@@ -102,6 +104,37 @@ int _p_emu_create_socket(const char* interface,uint8_t rx_tx)
 		perror("SIOCGIFHWADDR");
 		return -1;
 	}
+	memset(&ifr,0,sizeof(ifr));
+	strncpy(ifr.ifr_name,(const char*)(interface),strlen(interface));
+	if(!ioctl(sockid, SIOCGIFMTU, &ifr)) {
+		/* Contains current mtu value  */
+		//ifr.ifr_mtu
+	}else{
+		perror("SIOCGIFMTU");
+		return -1;
+	}
+
+	ifr.ifr_mtu = 1600;
+	if(ioctl(sockid, SIOCSIFMTU, &ifr)) {
+		perror("SIOCGIFMTU");
+		return -1;
+	}
+
+	//struct packet_mreq mreq = {0};
+
+
+	//mreq.mr_ifindex = if_nametoindex(interface);
+	//mreq.mr_type = PACKET_MR_PROMISC;
+
+	//if (mreq.mr_ifindex == 0) {
+	//	perror("if_nametoindex()");
+	//	return -1;
+	//}
+
+	//if (setsockopt(sockid, SOL_PACKET,0, &mreq, sizeof(mreq)) != 0) {
+	//	perror("unable to enter promiscouous mode");
+	//	return -1;
+	//}
 
 
 	P_ERROR(DBG_INFO,"Socket Creation Success: %d",sockid);
@@ -168,9 +201,17 @@ int p_emu_start(slib_root_t* streams)
 	pthread_t      p_emu_tx_ThreadId;
 	pthread_t      p_emu_tx_ThreadId_Delay;
 
+#ifdef P_EMU_USE_SEMS
 	p_emu_init_rx_path();
 
 	p_emu_init_tx_path();
+#else
+	p_emu_init_tx_path();
+
+	p_emu_rx_msg_queue_init();
+
+	p_emu_tx_msg_queue_init();
+#endif
 
 	memset(&__p_emu_rx_config,0,sizeof(struct p_emu_rx_config));
 	memset(&__p_emu_tx_config,0,sizeof(struct p_emu_tx_config));
@@ -268,7 +309,7 @@ void p_emu_packet_discard(struct p_emu_packet *packet)
 	free(packet);
 	packet = (struct p_emu_packet *)NULL;
 }
-
+#if P_EMU_USE_SEMS
 /* Send Signal to process thread -------------------------------------------- */
 static sem_t __p_emu_rx_sem;
 
@@ -328,6 +369,104 @@ void p_emu_wait_tx_signal(void)
 	}
 	return;
 }
+#else
 
 
+
+static sem_t __p_emu_tx_sem;
+
+void p_emu_init_tx_path(void)
+{
+	memset(&__p_emu_tx_sem,0,sizeof(sem_t));
+
+	if(sem_init(&__p_emu_tx_sem,0,0)<0)
+	{
+		P_ERROR(DBG_ERROR,"Error: sem_init() %s",strerror(errno));
+	}
+	return;
+}
+void p_emu_post_tx_signal(void)
+{
+	if(sem_post(&__p_emu_tx_sem)<0)
+	{
+		P_ERROR(DBG_ERROR,"Error: sem_post() %s",strerror(errno));
+	}
+	return;
+}
+void p_emu_wait_tx_signal(void)
+{
+	if(sem_wait(&__p_emu_tx_sem)<0)
+	{
+		P_ERROR(DBG_ERROR,"Error: sem_wait() %s",strerror(errno));
+	}
+	return;
+}
+
+
+static mqd_t p_emu_rx_msg_q;
+
+void p_emu_rx_msg_queue_init(void)
+{
+	struct mq_attr attr;    // queue attr
+
+	// Setup attributes
+	attr.mq_flags   = 0;
+	attr.mq_maxmsg  = 10;
+	attr.mq_msgsize = sizeof(struct p_emu_stream);
+	attr.mq_curmsgs = 0;
+
+	p_emu_rx_msg_q = mq_open ("/p_emu_rx_msg_q",O_CREAT|O_RDWR,0644,&attr);
+
+	P_ERROR(DBG_INFO,"Info: mq_open() %d",(int)p_emu_rx_msg_q);
+
+	if(p_emu_rx_msg_q==(mqd_t)-1){
+		P_ERROR(DBG_ERROR,"Error: mq_open() %s",
+			strerror(errno));
+		assert(p_emu_rx_msg_q);
+	}
+}
+
+
+int p_emu_rx_msg_queue_send(void* ptr,size_t len)
+{
+	int retval = 0;
+
+	retval = mq_send (p_emu_rx_msg_q,(const char *)ptr,len,(unsigned int)0);
+
+	if(retval<0){
+		P_ERROR(DBG_ERROR,"Error: mq_send() %s",strerror(errno));
+		assert(retval==0);
+	}
+
+	return retval;
+}
+
+ssize_t p_emu_rx_msg_queue_wait(void* ptr,size_t len)
+{
+	unsigned int msg_prio=0;
+
+	return mq_receive (p_emu_rx_msg_q,(char *)ptr,len,&msg_prio);
+}
+
+
+static mqd_t p_emu_tx_msg_q;
+
+void p_emu_tx_msg_queue_init(void)
+{
+	//p_emu_tx_msg_q = mq_open ("/p_emu_tx_msg_q",O_RDWR);
+}
+
+
+int p_emu_tx_msg_queue_send(void* ptr,size_t len)
+{
+	return mq_send (p_emu_tx_msg_q,(const char *)ptr,len,1);
+}
+
+ssize_t p_emu_tx_msg_queue_wait(void* ptr,size_t len)
+{
+	unsigned int msg_prio=0;
+
+	return mq_receive (p_emu_tx_msg_q,(char *)&ptr,len,&msg_prio);
+}
+#endif
 /*----------------------------------------------------------------------------*/

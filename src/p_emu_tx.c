@@ -197,7 +197,8 @@ void p_emu_tx_non_delayed_packet(void* data, slib_node_t* node)
 
 	if(len!=packet->length)
 	{
-		P_ERROR(DBG_WARN,"Failed Sending packet [%d]",len);
+		P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s]",
+			len,strerror(errno));
 		assert(0);
 	}
 
@@ -207,8 +208,7 @@ void p_emu_tx_non_delayed_packet(void* data, slib_node_t* node)
 	memset(&leaving,0,sizeof(struct timespec));
 	clock_gettime(CLOCK_REALTIME,&leaving);
 
-	P_ERROR(DBG_INFO,"Timer[%d]___Sending__Tx_S(%d) Len (%d) Time [%lu]s [%lu]ns ___p[%p]",
-		stream->timers.tx_timer,
+	P_ERROR(DBG_INFO,"Sending__Tx_S(%d) Len (%d) Time [%lu]s [%lu]ns ___p[%p]",
 		stream->config.tx_iface_fd,
 		packet->length,
 		leaving.tv_sec,

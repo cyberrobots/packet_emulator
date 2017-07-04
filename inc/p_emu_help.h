@@ -1,6 +1,8 @@
 #ifndef PACKET_EMU_HELP_H_
 #define PACKET_EMU_HELP_H_
 
+#define P_EMU_UNUSED(m) m=m;
+
 /* Compiler definitions for branching */
 
 #define likely(x)       __builtin_expect((x),1)
@@ -31,6 +33,7 @@ int p_emu_import_settings(const char *filename, slib_root_t *streams);
 
 int p_emu_create_interfaces(slib_root_t *streams);
 
+#if P_EMU_USE_SEMS
 void p_emu_init_rx_path(void);
 void p_emu_post_rx_signal(void);
 void p_emu_wait_rx_signal(void);
@@ -38,6 +41,21 @@ void p_emu_wait_rx_signal(void);
 void p_emu_init_tx_path(void);
 void p_emu_post_tx_signal(void);
 void p_emu_wait_tx_signal(void);
+
+#else
+
+void p_emu_init_tx_path(void);
+void p_emu_post_tx_signal(void);
+void p_emu_wait_tx_signal(void);
+
+void p_emu_rx_msg_queue_init(void);
+int p_emu_rx_msg_queue_send(void* ptr,size_t len);
+ssize_t p_emu_rx_msg_queue_wait(void* ptr,size_t len);
+
+void p_emu_tx_msg_queue_init(void);
+int p_emu_tx_msg_queue_send(void* ptr,size_t len);
+ssize_t p_emu_tx_msg_queue_wait(void* ptr,size_t len);
+#endif
 
 int p_emu_timer_start(struct p_emu_stream *stream,struct p_emu_packet *pack);
 

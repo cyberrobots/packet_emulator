@@ -330,8 +330,24 @@ void p_emu_process_received(void* data, slib_node_t* node)
 					p_emu_packet_discard(pack);
 					return;
 				}
-
+#ifdef P_EMU_USE_SEMS
 				p_emu_post_tx_signal();
+#else
+				int ret = -1;
+				uint64_t ptr = (uint64_t)stream;
+
+				P_ERROR(DBG_INFO,"TxQueue_______Sent[%p]_[%lx]",
+					stream,ptr);
+
+				ret = p_emu_tx_msg_queue_send((void*)&ptr,
+							      sizeof(uint64_t));
+				if(unlikely(ret<0)){
+					P_ERROR(DBG_ERROR,"Error: \
+						p_emu_tx_msg_queue_send() %s",
+						strerror(ret));
+					assert(0);
+				}
+#endif
 			}
 
 		}else{
@@ -351,11 +367,11 @@ void* p_emu_PrThread(void* params)
 
 	struct p_emu_pr_config* cfg = (struct p_emu_pr_config*)params;
 	slib_root_t *streams = cfg->streams;
-
-
-
+#ifndef P_EMU_USE_SEMS
+	slib_node_t node;
+	uint64_t ptr  = 0;
+#endif
 	P_EMU_UNUSED(streams);
-	//P_EMU_UNUSED(stream);
 
 	while(1)
 	{
@@ -367,18 +383,18 @@ void* p_emu_PrThread(void* params)
 		TODO :  Change that for efficiency */
 		slib_func_exec (streams,NULL,p_emu_process_received);
 #else
+		ptr = 0;
 
-		slib_node_t node;
-		struct p_emu_stream stream;
+		ssize_t ret = p_emu_rx_msg_queue_wait((void*)&ptr,
+						      sizeof(uint64_t));
+		if(unlikely(ret<0)){
+			P_ERROR(DBG_ERROR,"Error: p_emu_rx_msg_queue_wait() %s",
+				strerror(ret));
+			assert(0);
+		}
 
-		memset(&node,0,sizeof(slib_node_t));
-		memset(&stream,0,sizeof(struct p_emu_stream));
-		//stream=NULL;
-		P_ERROR(DBG_INFO,"________BLOCK__________");
 
-		ssize_t ret = p_emu_rx_msg_queue_wait((void*)&stream,sizeof(struct p_emu_stream));
-
-		node.data = (struct p_emu_stream *)&stream;
+		node.data = (struct p_emu_stream *)ptr;
 
 		p_emu_process_received(NULL,(slib_node_t*)&node);
 #endif

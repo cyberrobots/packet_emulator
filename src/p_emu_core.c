@@ -206,8 +206,6 @@ int p_emu_start(slib_root_t* streams)
 
 	p_emu_init_tx_path();
 #else
-	p_emu_init_tx_path();
-
 	p_emu_rx_msg_queue_init();
 
 	p_emu_tx_msg_queue_init();
@@ -369,9 +367,6 @@ void p_emu_wait_tx_signal(void)
 	}
 	return;
 }
-#else
-
-
 
 static sem_t __p_emu_tx_sem;
 
@@ -402,6 +397,7 @@ void p_emu_wait_tx_signal(void)
 	return;
 }
 
+#else
 
 static mqd_t p_emu_rx_msg_q;
 
@@ -412,17 +408,18 @@ void p_emu_rx_msg_queue_init(void)
 	// Setup attributes
 	attr.mq_flags   = 0;
 	attr.mq_maxmsg  = 10;
-	attr.mq_msgsize = sizeof(struct p_emu_stream);
+	attr.mq_msgsize = sizeof(struct p_emu_stream*);
 	attr.mq_curmsgs = 0;
 
-	p_emu_rx_msg_q = mq_open ("/p_emu_rx_msg_q",O_CREAT|O_RDWR,0644,&attr);
+	p_emu_rx_msg_q = mq_open ("/p_emu_rx_msg_q_ptr",
+				  O_CREAT|O_RDWR, 0644, &attr);
 
 	P_ERROR(DBG_INFO,"Info: mq_open() %d",(int)p_emu_rx_msg_q);
 
 	if(p_emu_rx_msg_q==(mqd_t)-1){
 		P_ERROR(DBG_ERROR,"Error: mq_open() %s",
 			strerror(errno));
-		assert(p_emu_rx_msg_q);
+		assert(0);
 	}
 }
 
@@ -453,20 +450,46 @@ static mqd_t p_emu_tx_msg_q;
 
 void p_emu_tx_msg_queue_init(void)
 {
-	//p_emu_tx_msg_q = mq_open ("/p_emu_tx_msg_q",O_RDWR);
+	struct mq_attr attr;    // queue attr
+
+	// Setup attributes
+	attr.mq_flags   = 0;
+	attr.mq_maxmsg  = 10;
+	attr.mq_msgsize = sizeof(struct p_emu_stream*);
+	attr.mq_curmsgs = 0;
+
+	p_emu_tx_msg_q = mq_open ("/p_emu_tx_msg_q_ptr_!@#",
+				  O_CREAT|O_RDWR, 0644, &attr);
+
+	P_ERROR(DBG_INFO,"Info: mq_open() %d",(int)p_emu_tx_msg_q);
+
+	if(p_emu_tx_msg_q==(mqd_t)-1){
+		P_ERROR(DBG_ERROR,"Error: mq_open() %s",
+			strerror(errno));
+		assert(0);
+	}
 }
 
 
 int p_emu_tx_msg_queue_send(void* ptr,size_t len)
 {
-	return mq_send (p_emu_tx_msg_q,(const char *)ptr,len,1);
+	int retval = 0;
+
+	retval = mq_send (p_emu_tx_msg_q,(const char *)ptr,len,(unsigned int)0);
+
+	if(retval<0){
+		P_ERROR(DBG_ERROR,"Error: mq_send() %s",strerror(errno));
+		assert(retval==0);
+	}
+
+	return retval;
 }
 
 ssize_t p_emu_tx_msg_queue_wait(void* ptr,size_t len)
 {
 	unsigned int msg_prio=0;
 
-	return mq_receive (p_emu_tx_msg_q,(char *)&ptr,len,&msg_prio);
+	return mq_receive (p_emu_tx_msg_q,(char *)ptr,len,&msg_prio);
 }
 #endif
 /*----------------------------------------------------------------------------*/

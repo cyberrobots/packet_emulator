@@ -229,13 +229,34 @@ void* p_emu_TxThread(void* params)
 
 	struct p_emu_tx_config* cfg = (struct p_emu_tx_config*)params;
 	slib_root_t *streams = cfg->streams;
+#ifndef P_EMU_USE_SEMS
+	slib_node_t node = {0};
+	uint64_t ptr  = 0;
+#endif
+
+	P_EMU_UNUSED(streams);
 
 	while(1)
 	{
+#ifdef P_EMU_USE_SEMS
 		/* TODO : Add a queue here in order to send packet directly */
 		p_emu_wait_tx_signal();
 
 		slib_func_exec (streams,NULL,p_emu_tx_non_delayed_packet);
+#else
+		ptr = 0;
+		ssize_t ret = p_emu_tx_msg_queue_wait((void*)&ptr,
+						      sizeof(uint64_t));
+		if(unlikely(ret<0)){
+			P_ERROR(DBG_ERROR,"Error: p_emu_rx_msg_queue_wait() %s",
+				strerror(ret));
+			assert(0);
+		}
+
+		node.data = (struct p_emu_stream *)ptr;
+
+		p_emu_tx_non_delayed_packet(NULL,(slib_node_t*)&node);
+#endif
 
 	}
 

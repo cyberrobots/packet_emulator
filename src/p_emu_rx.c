@@ -67,16 +67,15 @@ void p_emu_rx_packet(void* data, slib_node_t* node)
 #ifdef P_EMU_USE_SEMS
 		p_emu_post_rx_signal();
 #else
+		int ret = -1;
 		uint64_t ptr = (uint64_t)stream;
 
 		P_ERROR(DBG_INFO,"___DataSent[%p]_[%lx]__[%lu]___",stream,ptr,
 			sizeof(struct p_emu_stream));
 
-		int ret = -1;
-
-		ret = p_emu_rx_msg_queue_send((void*)stream,
-					      sizeof(struct p_emu_stream));
-		if(ret<0){
+		ret = p_emu_rx_msg_queue_send((void*)&ptr,
+					      sizeof(uint64_t));
+		if(unlikely(ret<0)){
 			P_ERROR(DBG_ERROR,"Error: p_emu_rx_msg_queue_send() %s",
 				strerror(ret));
 			assert(0);

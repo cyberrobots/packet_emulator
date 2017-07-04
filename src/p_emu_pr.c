@@ -352,14 +352,38 @@ void* p_emu_PrThread(void* params)
 	struct p_emu_pr_config* cfg = (struct p_emu_pr_config*)params;
 	slib_root_t *streams = cfg->streams;
 
+
+
+	P_EMU_UNUSED(streams);
+	//P_EMU_UNUSED(stream);
+
 	while(1)
 	{
+#ifdef P_EMU_USE_SEMS
 		/* wait a generic rx signal */
 		p_emu_wait_rx_signal();
 
 		/* Check every stream for packets,
 		TODO :  Change that for efficiency */
 		slib_func_exec (streams,NULL,p_emu_process_received);
+#else
+
+		slib_node_t node;
+		struct p_emu_stream stream;
+
+		memset(&node,0,sizeof(slib_node_t));
+		memset(&stream,0,sizeof(struct p_emu_stream));
+		//stream=NULL;
+		P_ERROR(DBG_INFO,"________BLOCK__________");
+
+		ssize_t ret = p_emu_rx_msg_queue_wait((void*)&stream,sizeof(struct p_emu_stream));
+
+		node.data = (struct p_emu_stream *)&stream;
+
+		p_emu_process_received(NULL,(slib_node_t*)&node);
+#endif
+
+
 
 	}
 

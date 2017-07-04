@@ -458,7 +458,7 @@ void p_emu_tx_msg_queue_init(void)
 	attr.mq_msgsize = sizeof(struct p_emu_stream*);
 	attr.mq_curmsgs = 0;
 
-	p_emu_tx_msg_q = mq_open ("/p_emu_tx_msg_q_ptr_!@#",
+	p_emu_tx_msg_q = mq_open ("/p_emu_tx_msg_q_ptr",
 				  O_CREAT|O_RDWR, 0644, &attr);
 
 	P_ERROR(DBG_INFO,"Info: mq_open() %d",(int)p_emu_tx_msg_q);

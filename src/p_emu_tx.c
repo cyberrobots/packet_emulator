@@ -65,8 +65,9 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
 		leaving.tv_sec,
 		leaving.tv_nsec,
 		packet);
-	printf("Interval[%lu]<<<<<<<<<<<<<<<<<\r\n",
-		(leaving.tv_sec-packet->arrival.tv_sec));
+	P_ERROR(DBG_INFO,"Interval[%lu][%lu]<<<<<<<<<<<<<<<<<\r\n",
+		(leaving.tv_sec-packet->arrival.tv_sec),
+		(leaving.tv_nsec-packet->arrival.tv_nsec));
 #endif
 
 	p_emu_packet_discard(packet);
@@ -75,17 +76,13 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
 	pack_node = NULL; packet = NULL;
 	pack_node = slib_show_first(stream->tx_list);
 	/* If no first node exists, stop timer otherwise update */
-	if(!pack_node)
+	if(pack_node)
 	{
-		//timerfd_settime(stream->timers.tx_timer,0,NULL,NULL);
-
-		P_ERROR(DBG_ERROR,"______NO____PACKET_____");
-	}else{
-
-		P_ERROR(DBG_ERROR,"______Re-Arm Timer_____");
-
-		/* Update timer. */
 		packet = (struct p_emu_packet *)pack_node->data;
+
+		P_ERROR(DBG_INFO,"______Re-Arm Timer_____[%p]",packet);
+		/* Update timer. */
+
 		if(p_emu_timer_start(stream,packet)){
 			P_ERROR(DBG_ERROR,"Timer Failed!");
 		}
@@ -110,7 +107,6 @@ void p_emu_tx_timers(void* data, slib_node_t* node)
 		P_ERROR(DBG_ERROR,"Descriptor![%d]",stream->timers.tx_timer);
 		P_ERROR(DBG_ERROR,"Timer read Failed! [%d]",s);
 		P_ERROR(DBG_ERROR,"Timer read Failed! [%lu]",exp);
-		//assert(0);
 	}
 	else
 	{

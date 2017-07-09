@@ -90,8 +90,13 @@ void p_emu_delay_calculate(struct p_emu_stream *stream,struct p_emu_packet *pack
 
 	P_ERROR(DBG_INFO,"___Calculate delay___");
 
-	pack->leave.tv_sec = pack->arrival.tv_sec + 1; // static delay
-	pack->leave.tv_nsec = pack->arrival.tv_nsec;
+	pack->leave.tv_sec = pack->arrival.tv_sec; // static delay
+	pack->leave.tv_nsec = pack->arrival.tv_nsec + 500000;
+
+	while(pack->leave.tv_nsec > 1000000000){
+		pack->leave.tv_sec++;
+		pack->leave.tv_nsec-=1000000000;
+	}
 
 	return;
 }
@@ -209,14 +214,6 @@ int p_emu_timer_start(struct p_emu_stream *stream,struct p_emu_packet *pack)
 		P_ERROR(DBG_ERROR,"Parameters");
 		return -1;
 	}
-#if 0
-	/* Stop timer */
-	stat = timerfd_settime(stream->timers.tx_timer,TFD_TIMER_ABSTIME,NULL,NULL);
-	if(stat < 0)
-	{
-		P_ERROR(DBG_WARN,"Failed to reset [%d]",stat);
-	}
-#endif
 
 	/* Set and Arm timer */
 	interval.it_interval.tv_sec  = 0;
@@ -228,12 +225,10 @@ int p_emu_timer_start(struct p_emu_stream *stream,struct p_emu_packet *pack)
 				   TFD_TIMER_ABSTIME,&interval,NULL);
 	if(stat < 0)
 	{
-		P_ERROR(DBG_WARN,"Failed to start timer [%d]",stat);
+		P_ERROR(DBG_ERROR,"Failed to start timer [%d][%s]",
+			stat,strerror(errno));
 		return -1;
 	}
-
-	P_ERROR(DBG_INFO,"Timer __[%d]__ started!",stream->timers.tx_timer);
-
 
 	return 0;
 }

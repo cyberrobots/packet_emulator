@@ -90,8 +90,25 @@ void p_emu_delay_calculate(struct p_emu_stream *stream,struct p_emu_packet *pack
 
 	P_ERROR(DBG_INFO,"___Calculate delay___");
 
-	pack->leave.tv_sec = pack->arrival.tv_sec; // static delay
-	pack->leave.tv_nsec = pack->arrival.tv_nsec + 500000;
+	uint32_t delay_type = (stream->delay.flags & ~DELAY_IS_ENABLED);
+
+	switch(delay_type)
+	{
+		case DELAY_IS_STATIC:
+		{
+			P_ERROR(DBG_INFO,"___STATIC_DELAY___");
+			pack->leave.tv_sec = pack->arrival.tv_sec +
+					     stream->delay.st_delay.d.tv_sec;
+			pack->leave.tv_nsec = pack->arrival.tv_nsec +
+					      stream->delay.st_delay.d.tv_nsec;
+			break;
+		}
+		default:
+			break;
+	}
+
+
+	/* Make sure that nsec is less than 10^9 */
 
 	while(pack->leave.tv_nsec > 1000000000){
 		pack->leave.tv_sec++;

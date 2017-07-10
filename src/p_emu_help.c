@@ -354,10 +354,29 @@ void import_loss(struct p_emu_stream *stream,char* buffer,int len){
 
 void import_static_delay(struct p_emu_stream *stream,char* buffer,int len){
 
-	stream->delay.st_delay.d.tv_sec = 10;
-	stream->delay.st_delay.d.tv_nsec = 0;
+	int sec = getInteger(buffer,"sec=",strlen("sec="));
+
+	int nsec = getInteger(buffer,"nsec=",strlen("nsec="));
+
+	if(sec>0)
+		stream->delay.st_delay.d.tv_sec = sec;
+
+	if(nsec>0)
+		stream->delay.st_delay.d.tv_nsec = nsec;
+
+
+
+
+
+	/* Make sure that nsec is less than 10^9 */
+
+	while(stream->delay.st_delay.d.tv_nsec>1000000000){
+		stream->delay.st_delay.d.tv_nsec-=1000000000;
+		stream->delay.st_delay.d.tv_sec++;
+	}
 
 	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_STATIC);
+
 	return;
 }
 

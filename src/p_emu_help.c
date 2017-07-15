@@ -318,24 +318,25 @@ void import_dst_mac(struct p_emu_stream *stream,char* buffer,int len){
 	       (unsigned int*)p+5);
 
 	for (int i = 0; i < 6; i++ ){
-		stream->filter.filter_key.payload[i] = (uint8_t) p[i];
+		stream->filter.filter_key.payload[i+6] = (uint8_t) p[i];
 	}
 
 	P_ERROR(DBG_INFO,"%.2X:%.2X:%.2X:%.2X:%.2X:%.2X",
-	   (unsigned int)stream->filter.filter_key.payload[0],
-	   (unsigned int)stream->filter.filter_key.payload[1],
-	   (unsigned int)stream->filter.filter_key.payload[2],
-	   (unsigned int)stream->filter.filter_key.payload[3],
-	   (unsigned int)stream->filter.filter_key.payload[4],
-	   (unsigned int)stream->filter.filter_key.payload[5]);
+	   (unsigned int)stream->filter.filter_key.payload[6],
+	   (unsigned int)stream->filter.filter_key.payload[7],
+	   (unsigned int)stream->filter.filter_key.payload[8],
+	   (unsigned int)stream->filter.filter_key.payload[9],
+	   (unsigned int)stream->filter.filter_key.payload[10],
+	   (unsigned int)stream->filter.filter_key.payload[11]);
 
-	stream->filter.filter_key.length  += P_EMU_ETHER_ADDR_LEN;
+	stream->filter.filter_key.length = 2 * P_EMU_ETHER_ADDR_LEN;
 
 	/* Set the mask */
 
-	memset(stream->filter.filter_mask.payload,0xFF,P_EMU_ETHER_ADDR_LEN);
+	memset(&stream->filter.filter_mask.payload[P_EMU_ETHER_ADDR_LEN],
+	       0xFF,P_EMU_ETHER_ADDR_LEN);
 
-	stream->filter.filter_mask.length += P_EMU_ETHER_ADDR_LEN;
+	stream->filter.filter_mask.length = 2 * P_EMU_ETHER_ADDR_LEN;
 
 	/* Set the flags */
 	stream->filter.flags |= (FILTERING_IS_ENABLED | FILTER_DST_MAC_ENABLED);

@@ -5,6 +5,9 @@
 #define P_EMU_INFO(m,...)	fprintf(stdout,m"\r\n",##__VA_ARGS__);
 
 
+#define P_EMU_MAC_STR		"[%x:%x:%x:%x:%x:%x]"
+#define P_EMU_MAC_PRNT(m)	m[0],m[1],m[2],m[3],m[4],m[5]
+
 /* Display debug informantion to user, regarding the debug level */
 
 typedef enum{

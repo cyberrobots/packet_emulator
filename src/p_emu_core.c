@@ -114,7 +114,7 @@ int _p_emu_create_socket(const char* interface,uint8_t rx_tx)
 		return -1;
 	}
 
-	ifr.ifr_mtu = 1600;
+	ifr.ifr_mtu = 1500;
 	if(ioctl(sockid, SIOCSIFMTU, &ifr)) {
 		perror("SIOCGIFMTU");
 		return -1;
@@ -368,34 +368,6 @@ void p_emu_wait_tx_signal(void)
 	return;
 }
 
-static sem_t __p_emu_tx_sem;
-
-void p_emu_init_tx_path(void)
-{
-	memset(&__p_emu_tx_sem,0,sizeof(sem_t));
-
-	if(sem_init(&__p_emu_tx_sem,0,0)<0)
-	{
-		P_ERROR(DBG_ERROR,"Error: sem_init() %s",strerror(errno));
-	}
-	return;
-}
-void p_emu_post_tx_signal(void)
-{
-	if(sem_post(&__p_emu_tx_sem)<0)
-	{
-		P_ERROR(DBG_ERROR,"Error: sem_post() %s",strerror(errno));
-	}
-	return;
-}
-void p_emu_wait_tx_signal(void)
-{
-	if(sem_wait(&__p_emu_tx_sem)<0)
-	{
-		P_ERROR(DBG_ERROR,"Error: sem_wait() %s",strerror(errno));
-	}
-	return;
-}
 
 #else
 

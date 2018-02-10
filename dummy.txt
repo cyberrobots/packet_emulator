@@ -1,0 +1,3 @@
+sudo /sbin/ip li add dummy0 type dummy
+
+sudo ifconfig dummy0 up

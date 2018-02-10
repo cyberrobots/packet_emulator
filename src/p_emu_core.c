@@ -114,7 +114,7 @@ int _p_emu_create_socket(const char* interface,uint8_t rx_tx)
 		return -1;
 	}
 
-	ifr.ifr_mtu = 1500;
+	ifr.ifr_mtu = 2048;
 	if(ioctl(sockid, SIOCSIFMTU, &ifr)) {
 		perror("SIOCGIFMTU");
 		return -1;

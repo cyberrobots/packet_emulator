@@ -63,13 +63,18 @@ error:
 
 int p_emu_filter_packet(struct p_emu_stream *stream, struct p_emu_packet *pack)
 {
-	if(!p_emu_frame_compare(pack->payload,
-				stream->filter.filter_key.payload,
-				stream->filter.filter_mask.payload,
-				stream->filter.filter_mask.length)){
-		P_ERROR(DBG_INFO,"P_EMU_KEEP_PACKET___p[%p]",pack);
-		return P_EMU_KEEP_PACKET;
-	}
+
+    if(!(stream->filter.flags & FILTERING_IS_ENABLED)) {
+            return P_EMU_KEEP_PACKET;
+    }
+
+    if(!p_emu_frame_compare(pack->payload,
+                stream->filter.filter_key.payload,
+                stream->filter.filter_mask.payload,
+                stream->filter.filter_mask.length)){
+        P_ERROR(DBG_INFO,"P_EMU_KEEP_PACKET___p[%p]",pack);
+        return P_EMU_KEEP_PACKET;
+    }
 
 	P_ERROR(DBG_INFO,"P_EMU_DISCARD_PACKET___p[%p]",pack);
 	return P_EMU_DISCARD_PACKET;

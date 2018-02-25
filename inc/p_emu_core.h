@@ -50,9 +50,37 @@ struct p_emu_static_delay {
 	struct timespec d;
 };
 
+struct p_emu_uniform_delay {
+	long min;
+    long max;
+};
+
+struct p_emu_gaussian_delay {
+    long mean;                  // mean
+    long stddev;                // standard deviation
+    long shift;                 // shift
+};
+
+struct p_emu_poisson_delay {
+	struct timespec d;
+};
+
+struct p_emu_exponential_delay {
+	struct timespec d;
+};
+
+struct p_emu_pareto_delay {
+	struct timespec d;
+};
+
 struct p_emu_delay_config {
 	uint32_t	flags;
-	struct p_emu_static_delay st_delay;
+	struct p_emu_static_delay       st_delay;
+    struct p_emu_uniform_delay      un_delay;
+    struct p_emu_gaussian_delay     ga_delay;
+    struct p_emu_poisson_delay      po_delay;
+    struct p_emu_exponential_delay  ex_delay;
+    struct p_emu_pareto_delay       pa_delay;
 };
 
 /* Loss --------------------------------------------------------------------- */

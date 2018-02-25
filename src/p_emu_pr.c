@@ -2,6 +2,7 @@
 #include "p_emu_dbg.h"
 #include "p_emu_core.h"
 #include "p_emu_help.h"
+#include "p_emu_math.h"
 
 #ifdef P_EMU_KEEP_PACKET
 #undef P_EMU_KEEP_PACKET
@@ -108,6 +109,34 @@ void p_emu_delay_calculate(struct p_emu_stream *stream,struct p_emu_packet *pack
 					      stream->delay.st_delay.d.tv_nsec;
 			break;
 		}
+        case DELAY_IS_UNIFORM:
+        {
+
+            P_ERROR(DBG_INFO,"___UNIFORM_DELAY___");
+            long delay = uniform((void *)&stream->delay.un_delay);
+
+			pack->leave.tv_sec = pack->arrival.tv_sec;
+
+            pack->leave.tv_nsec = pack->arrival.tv_nsec + delay;
+
+
+            break;
+        }
+        case DELAY_IS_GAUSSIAN:
+        {
+            P_ERROR(DBG_INFO,"Not Implemented");
+            assert ( 0 );
+
+            long delay = rand_normal((void *)&stream->delay.ga_delay);
+
+			pack->leave.tv_sec = pack->arrival.tv_sec;
+
+            pack->leave.tv_nsec = pack->arrival.tv_nsec + delay;
+
+
+            break;
+        }
+
 		default:
 			break;
 	}
@@ -350,20 +379,23 @@ void p_emu_process_received(void* data, slib_node_t* node)
 #ifdef P_EMU_USE_SEMS
 				p_emu_post_tx_signal();
 #else
-				int ret = -1;
-				uint64_t ptr = (uint64_t)stream;
 
-				P_ERROR(DBG_INFO,"TxQueue_______Sent[%p]_[%lx]",
-					stream,ptr);
+                /* Push packet to queue */
 
-				ret = p_emu_tx_msg_queue_send((void*)&ptr,
-							      sizeof(uint64_t));
-				if(unlikely(ret<0)){
-					P_ERROR(DBG_ERROR,"Error: \
-						p_emu_tx_msg_queue_send() %s",
-						strerror(ret));
-					assert(0);
-				}
+                int ret = -1;
+                uint64_t ptr = (uint64_t)stream;
+
+                P_ERROR(DBG_INFO,"TxQueue_______Sent[%p]_[%lx]",
+                    stream,ptr);
+
+                ret = p_emu_tx_msg_queue_send((void*)&ptr,
+                                  sizeof(uint64_t));
+                if(unlikely(ret<0)){
+                    P_ERROR(DBG_ERROR,"Error: \
+                        p_emu_tx_msg_queue_send() %s",
+                        strerror(ret));
+                    assert(0);
+                }
 #endif
 			}
 

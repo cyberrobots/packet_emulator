@@ -65,7 +65,7 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
 		leaving.tv_sec,
 		leaving.tv_nsec,
 		packet);
-	P_ERROR(DBG_INFO,"Interval[%lu][%lu]<<<<<<<<<<<<<<<<<\r\n",
+	P_ERROR(DBG_INFO,"Interval[%lu sec][%lu ns]<<<<<<<<<<<<<<<<<\r\n",
 		(leaving.tv_sec-packet->arrival.tv_sec),
 		(leaving.tv_nsec-packet->arrival.tv_nsec));
 #endif
@@ -210,7 +210,7 @@ void p_emu_tx_non_delayed_packet(void* data, slib_node_t* node)
 		leaving.tv_sec,
 		leaving.tv_nsec,
 		packet);
-	printf("Interval[%lu][%lu]<<<<<<<<<<<<<<<<<\r\n",
+	printf("Interval[%lu sec][%lu ns]<<<<<<<<<<<<<<<<<\r\n",
 	       (leaving.tv_sec-packet->arrival.tv_sec),
 	       (leaving.tv_nsec-packet->arrival.tv_nsec));
 #endif

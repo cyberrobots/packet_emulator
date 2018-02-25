@@ -90,13 +90,15 @@ void p_emu_interfaces( void )
 
 /* Configuration delimiters */
 
-#define STREAM_NAME		"Stream="
-#define STREAM_DST_MAC		"dst_mac="
-#define STREAM_SRC_MAC		"src_mac="
-#define STREAM_IN_IFACE		"in_iface="
-#define STREAM_OUT_IFACE	"out_iface="
-#define STREAM_LOSS_PERCENTAGE	"loss_per="
-#define STREAM_STATIC_DELAY	"static_delay="
+#define STREAM_NAME             "Stream="
+#define STREAM_DST_MAC          "dst_mac="
+#define STREAM_SRC_MAC          "src_mac="
+#define STREAM_IN_IFACE         "in_iface="
+#define STREAM_OUT_IFACE        "out_iface="
+#define STREAM_LOSS_PERCENTAGE  "loss_per="
+#define STREAM_STATIC_DELAY     "static_delay:"
+#define STREAM_UNIFORM_DELAY    "uniform_delay:"
+#define STREAM_NORMAL_DELAY     "normal_delay:"
 
 /* Configuration Callbacks */
 #define P_EMU_IMP_FUNC(m)	void(m)(struct p_emu_stream *stream,char* buffer,int len)
@@ -110,10 +112,10 @@ P_EMU_IMP_FUNC(import_src_mac);
 P_EMU_IMP_FUNC(import_input_iface);
 P_EMU_IMP_FUNC(import_output_iface);
 /* Import Distr Attributes. */
-//P_EMU_IMP_FUNC(import_gaussian);
+P_EMU_IMP_FUNC(import_normal_delay);
 //P_EMU_IMP_FUNC(import_exponential);
 //P_EMU_IMP_FUNC(import_poisson);
-//P_EMU_IMP_FUNC(import_uniform);
+P_EMU_IMP_FUNC(import_uniform_delay);
 //P_EMU_IMP_FUNC(import_static);
 //P_EMU_IMP_FUNC(import_pareto);
 //P_EMU_IMP_FUNC(import_pareto_2);
@@ -131,6 +133,8 @@ static p_emu_import_entry_t p_emu_import_table[]=
 	{STREAM_OUT_IFACE , import_output_iface },
 	{STREAM_LOSS_PERCENTAGE,import_loss },
 	{STREAM_STATIC_DELAY,import_static_delay },
+	{STREAM_UNIFORM_DELAY,import_uniform_delay },
+    {STREAM_NORMAL_DELAY,import_normal_delay},
 };
 
 #define NUM_OF_IMPORT_PARAMS ( TABLE_SIZE_OF(p_emu_import_table) )
@@ -377,6 +381,50 @@ void import_static_delay(struct p_emu_stream *stream,char* buffer,int len){
 	}
 
 	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_STATIC);
+
+	return;
+}
+
+
+void import_uniform_delay(struct p_emu_stream *stream,char* buffer,int len){
+
+    P_ERROR(DBG_INFO,"___import_uniform_delay___");
+
+	int min = getInteger(buffer,"min=",strlen("min="));
+
+	int max = getInteger(buffer,"max=",strlen("max="));
+
+
+    if(min>0)
+        stream->delay.un_delay.min = min;
+
+	if(max>0)
+		stream->delay.un_delay.max = max;
+
+	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_UNIFORM);
+
+	return;
+}
+
+void import_normal_delay(struct p_emu_stream *stream,char* buffer,int len){
+
+    int mean = getInteger(buffer,"mean=",strlen("mean="));
+
+	int stddev = getInteger(buffer,"stddev=",strlen("stddev="));
+
+    int shift = getInteger(buffer,"shift=",strlen("shift="));
+
+
+    if(mean>0)
+        stream->delay.ga_delay.mean = mean;
+
+	if(stddev>0)
+		stream->delay.ga_delay.stddev = stddev;
+
+    if(shift>0)
+		stream->delay.ga_delay.shift = shift;
+
+	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_GAUSSIAN);
 
 	return;
 }

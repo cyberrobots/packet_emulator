@@ -29,8 +29,9 @@ int main (int argc, char *argv[])
 			case 'f':
 				if(!p_emu_import_settings(optarg,StreamsList))
 					goto RunDeamon;
-				else
+				else{
 					p_emu_usage();
+                }
 				break;
 			default:
 				p_emu_usage();
@@ -38,6 +39,8 @@ int main (int argc, char *argv[])
 		}
 	}
 
+    /* Clean up */
+    slib_destroy_list (StreamsList);
 	return 0;
 
 RunDeamon:

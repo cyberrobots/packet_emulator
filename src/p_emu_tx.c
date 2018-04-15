@@ -39,19 +39,54 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
 	pack_node = slib_return_first(stream->tx_list);
 	if(!pack_node){
 		/* this stream has no packets ready for tx */
+        assert(0);
 		return;
 	}
 
 	packet = (struct p_emu_packet *)pack_node->data;
-
+#if 0
 	len = sendto(stream->config.tx_iface_fd, ( const void *)packet->payload,
 		     (size_t)packet->length,0,NULL, 0);
 
 	if(len!=packet->length)
 	{
-		P_ERROR(DBG_WARN,"Failed Sending packet [%d]",len);
+		P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d]",
+			len,strerror(errno),errno);
 		assert(0);
 	}
+#else
+    int tries = 30;
+    do
+    {
+        len = sendto(stream->config.tx_iface_fd, ( const void *)packet->payload,
+		     (size_t)packet->length,0,NULL, 0);
+        if(len == packet->length){
+            break;
+        }
+
+        if(len!= packet->length && errno==EAGAIN){
+            tries--;
+        }else{
+            P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d]",
+                len,strerror(errno),errno);
+
+            printf("Failed Sending packet [%d]__[%s][%d]\r\n",
+                len,strerror(errno),errno);
+            assert(0);
+        }
+
+
+    }while(tries);
+
+    if(!tries){
+        P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d]",
+                len,strerror(errno),errno);
+		printf("Failed Sending packet [%d]__[%s][%d]\r\n",
+                len,strerror(errno),errno);
+        assert(0);
+    }
+
+#endif
 
 #ifdef PACK_EMU_INTERVAL_SHOW
 	struct timespec leaving;
@@ -181,13 +216,14 @@ void p_emu_tx_non_delayed_packet(void* data, slib_node_t* node)
 	pack_node = slib_return_first(stream->tx_list);
 	if(!pack_node){
 		/* this stream has no packets ready for tx */
+        assert(0);
 		return;
 	}
 
 	packet = (struct p_emu_packet *)pack_node->data;
 
 	P_ERROR(DBG_INFO,"Sending packet [%d]",packet->length);
-
+#if 0
 	len = sendto(stream->config.tx_iface_fd, ( const void *)packet->payload,
 		     (size_t)packet->length,0,NULL, 0);
 
@@ -197,7 +233,36 @@ void p_emu_tx_non_delayed_packet(void* data, slib_node_t* node)
 			len,strerror(errno));
 		assert(0);
 	}
+#else
 
+    int tries = 30;
+    do
+    {
+        len = sendto(stream->config.tx_iface_fd, ( const void *)packet->payload,
+		     (size_t)packet->length,0,NULL, 0);
+        if(len == packet->length){
+            break;
+        }
+
+        if(len!= packet->length && errno==EAGAIN){
+            tries--;
+        }else{
+            P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d]",
+                len,strerror(errno),errno);
+            assert(0);
+        }
+
+
+    }while(tries);
+
+    if(!tries){
+        P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d]",
+                len,strerror(errno),errno);
+        printf("Failed Sending packet [%d]__[%s][%d]\r\n",
+                len,strerror(errno),errno);
+        assert(0);
+    }
+#endif
 
 #ifdef PACK_EMU_INTERVAL_SHOW
 	struct timespec leaving;

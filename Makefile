@@ -2,11 +2,13 @@
 
 #FORWARD_TRAFFIC = -DFORWARD_UNMATCHED
 
-CC 		= gcc
-LD          	= gcc
-CFLAGS  	= -g -O0 -Wall -D_REENTRANT -DPACK_EMU_INTERVAL_SHOW
-LDFLAGS 	= -lpthread -lrt -lm
-OUTPUTFILE      = p_emu.bin
+CC          = gcc
+LD          = gcc
+
+# Options: -DPACK_EMU_INTERVAL_SHOW -DTIME_LOG -DNDEBUG
+CFLAGS      = -g -O3 -Wall -D_REENTRANT -DP_EMU_USE_SEMS
+LDFLAGS     = -lpthread -lrt -lm
+OUTPUTFILE  = p_emu.bin
 
 #Source Directories
 # Header file paths
@@ -16,8 +18,8 @@ INCLUDES	= ./inc/ \
 # Source file paths
 SOURCE_PATHS	= ./src \
 		  ./libs/llib \
-                  
-# Gather all header files                  
+
+# Gather all header files
 INCLUDE_FILES	=$(foreach d, $(INCLUDES), $(wildcard $d*.h))
 # Gather all header paths and add -I flag
 INC_PARAMS	=$(foreach d, $(INCLUDES), -I $d)
@@ -45,7 +47,7 @@ clean:
 	rm -rf ./$(OUTPUTFILE).map
 
 # Make info rule (just show some stuff)
-info: 
+info:
 	@echo "Header Files....."
 	@echo $(INCLUDE_FILES)
 	@echo "Source Files....."

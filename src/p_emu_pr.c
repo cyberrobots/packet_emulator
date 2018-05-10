@@ -124,8 +124,7 @@ void p_emu_delay_calculate(struct p_emu_stream *stream,struct p_emu_packet *pack
         }
         case DELAY_IS_GAUSSIAN:
         {
-            P_ERROR(DBG_INFO,"Not Implemented");
-            assert ( 0 );
+            P_ERROR(DBG_INFO,"___DELAY_IS_GAUSSIAN___");
 
             long delay = rand_normal((void *)&stream->delay.ga_delay);
 
@@ -162,98 +161,64 @@ void p_emu_delay_calculate(struct p_emu_stream *stream,struct p_emu_packet *pack
 (m).tv_usec = (n).tv_nsec / 1000; \
 }while(0);
 #endif
-//Debug Time compate function
-static uint32_t _____packet_comp_line   = 0;
 
-int pack_emu_sort_insert(slib_node_t* new, slib_node_t* tmp,
-			     slib_node_t* prev, slib_node_t* next)
+int pack_emu_sort_insert(void* newNode, void* currNode,
+			     void* prevNode, void* nextNode)
 {
-    struct timeval tv_new;          // Node Inserted now
-    struct timeval tv_tmp;          // Node that the list points
-    struct timeval tv_prev;         // Node previous of the tmp
-    struct timeval tv_next;         // Node next of the next
+#define LESS(m,n)       timercmp(m,n,<)
+#define GREATER(m,n)    timercmp(m,n,>)
+#define EQUAL(m,n)      timercmp(m,n,==)
 
-    if(prev){
-        TIMESPEC_TO_TIMEVAL(tv_prev,((struct p_emu_packet *)(prev->data))->leave);
+    struct timeval nVal;          // Node Inserted now
+    struct timeval cVal;          // Node that the list points
+    struct timeval pVal;         // Node previous of the tmp
+    struct timeval nxVal;         // Node next of the next
+    int result = INSERT_INVALID;
+
+    P_EMU_UNUSED(nVal);
+    P_EMU_UNUSED(cVal);
+    P_EMU_UNUSED(pVal);
+    P_EMU_UNUSED(nxVal);
+
+
+    struct timespec nleave = ((struct p_emu_packet *)(((slib_node_t*)newNode)->data))->leave;
+    struct timespec cleave = ((struct p_emu_packet *)(((slib_node_t*)currNode)->data))->leave;
+    struct timespec pleave = ((struct p_emu_packet *)(((slib_node_t*)prevNode)->data))->leave;
+    struct timespec nxleave = ((struct p_emu_packet *)(((slib_node_t*)nextNode)->data))->leave;
+
+    if(prevNode){
+        TIMESPEC_TO_TIMEVAL(pVal,pleave);
     }
 
-    if(next){
-        TIMESPEC_TO_TIMEVAL(tv_next,((struct p_emu_packet *)(next->data))->leave);
+    if(nextNode){
+        TIMESPEC_TO_TIMEVAL(nxVal,nxleave);
     }
 
-    TIMESPEC_TO_TIMEVAL(tv_tmp,((struct p_emu_packet *)(tmp->data))->leave);
-    TIMESPEC_TO_TIMEVAL(tv_new,((struct p_emu_packet *)(new->data))->leave);
+    TIMESPEC_TO_TIMEVAL(cVal,cleave);
+    TIMESPEC_TO_TIMEVAL(nVal,nleave);
 
-    if(prev && next)
-    {
-        if(timercmp(&tv_new,&tv_tmp,<) &&
-			(timercmp(&tv_new,&tv_prev,>) ||
-			 timercmp(&tv_new,&tv_prev,==)) )
-	{
-            _____packet_comp_line = __LINE__;
-            return INSERT_BEFORE;
-        }else if(timercmp(&tv_new,&tv_tmp,>)){//&& timercmp(&tv_new,&tv_prev,<=)
-            _____packet_comp_line = __LINE__;
-            return INSERT_AFTER;
-        }else if(timercmp(&tv_new,&tv_tmp,==)){
-            _____packet_comp_line = __LINE__;
-            return INSERT_AFTER;
-        }else{
-            _____packet_comp_line = __LINE__;
-            return INSERT_NO;
-        }
-    }else if(!prev && next){
-        if(timercmp(&tv_new,&tv_tmp,>) &&
-			(timercmp(&tv_new,&tv_next,<) ||
-			 timercmp(&tv_new,&tv_next,=)))
-	{ // && timercmp(&tv_new,&tv_next,<=)
-            _____packet_comp_line = __LINE__;
-            return INSERT_AFTER;
-        }else if(timercmp(&tv_new,&tv_tmp,<)) {
-            _____packet_comp_line = __LINE__;
-            return INSERT_BEFORE;
-        }else if(timercmp(&tv_new,&tv_tmp,==)){
-            _____packet_comp_line = __LINE__;
-            return INSERT_AFTER;
-        }else{
-            _____packet_comp_line = __LINE__;
-            return INSERT_NO;
-        }
-    }else if(prev  && !next){
-        if(timercmp(&tv_new,&tv_tmp,<) &&
-			(timercmp(&tv_new,&tv_prev,>) ||
-			 timercmp(&tv_new,&tv_prev,==)))
-	{ //&& timercmp(&tv_new,&tv_prev,>=)
-            _____packet_comp_line = __LINE__;
-            return INSERT_BEFORE;
-        }else if(timercmp(&tv_new,&tv_tmp,>)) {
-            _____packet_comp_line = __LINE__;
-            return INSERT_AFTER;
-        }else if(timercmp(&tv_new,&tv_tmp,==)){
-            _____packet_comp_line = __LINE__;
-            return INSERT_AFTER;
-        }else{
-            _____packet_comp_line = __LINE__;
-            return INSERT_NO;
-        }
-    }else if(!prev && !next){
-        if(timercmp(&tv_new,&tv_tmp,<)){
-            _____packet_comp_line = __LINE__;
-            return INSERT_BEFORE;
-        }else if(timercmp(&tv_new,&tv_tmp,>)) {
-            _____packet_comp_line = __LINE__;
-            return INSERT_AFTER;
-        }else if(timercmp(&tv_new,&tv_tmp,==)){
-            _____packet_comp_line = __LINE__;
-            return INSERT_AFTER;
-        }else{
-            _____packet_comp_line = __LINE__;
-            return INSERT_NO;
-        }
-
+    if((LESS(&nVal,&cVal)) && (!prevNode)){
+        result = INSERT_BEFORE;
+    }else
+    if((GREATER(&nVal,&cVal) || EQUAL(&nVal,&cVal)) && (!nextNode)){
+        result = INSERT_AFTER;
+    }else
+    if((GREATER(&nVal,&cVal) || EQUAL(&nVal,&cVal)) && (nextNode)){
+        result = INSERT_NO;
+    }else
+    if((LESS(&nVal,&cVal)) && (prevNode)){
+        result = INSERT_BEFORE;
+    }else{
+        assert(0);
     }
 
-    return INSERT_NO;
+
+    return result;
+
+#undef LESS
+#undef GREATER
+#undef EQUAL
+
 }
 
 int p_emu_timer_start(struct p_emu_stream *stream,struct p_emu_packet *pack)
@@ -284,11 +249,11 @@ int p_emu_timer_start(struct p_emu_stream *stream,struct p_emu_packet *pack)
 	return 0;
 }
 
-void p_emu_process_received(void* data, slib_node_t* node)
+void p_emu_process_received(void* data, void* node)
 {
 	struct p_emu_packet *pack = NULL;
 	slib_node_t *pack_node = NULL;
-	struct p_emu_stream *stream = (struct p_emu_stream *)node->data;
+	struct p_emu_stream *stream = (struct p_emu_stream *)((slib_node_t *)node)->data;
 
 
 	if(!slib_get_list_cont(stream->rx_list)){
@@ -455,3 +420,179 @@ void* p_emu_PrThread(void* params)
 	return NULL;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#if 0
+#error Temp code
+
+    P_EMU_UNUSED(_____packet_comp_line);
+
+    struct timeval tv_new;          // Node Inserted now
+    struct timeval tv_tmp;          // Node that the list points
+    struct timeval tv_prev;         // Node previous of the tmp
+    struct timeval tv_next;         // Node next of the next
+
+    P_EMU_UNUSED(tv_new);
+    P_EMU_UNUSED(tv_tmp);
+    P_EMU_UNUSED(tv_prev);
+    P_EMU_UNUSED(tv_next);
+
+
+
+    if(prev){
+        TIMESPEC_TO_TIMEVAL(tv_prev,((struct p_emu_packet *)(prev->data))->leave);
+    }
+
+    if(next){
+        TIMESPEC_TO_TIMEVAL(tv_next,((struct p_emu_packet *)(next->data))->leave);
+    }
+
+    TIMESPEC_TO_TIMEVAL(tv_tmp,((struct p_emu_packet *)(tmp->data))->leave);
+    TIMESPEC_TO_TIMEVAL(tv_new,((struct p_emu_packet *)(new->data))->leave);
+
+#if 0
+//new
+static unsigned long invalid=0;
+static unsigned long invalid1=0;
+static unsigned long before=0;
+static unsigned long before1=0;
+static unsigned long after=0;
+#define LESS(m,n)       timercmp(m,n,<)
+#define GREATER(m,n)    timercmp(m,n,>)
+#define EQUAL(m,n)      timercmp(m,n,==)
+
+
+    if (!prev){
+        if(GREATER(&tv_new,&tv_tmp) || EQUAL(&tv_new,&tv_tmp)) {
+            printf("INSERT_AFTER__[%ld]\r\n",after++);
+            return INSERT_NO;
+        }else{
+            printf("INSERT_BEFORE1__[%ld]\r\n",before1++);
+            return INSERT_BEFORE;
+        }
+    }else{
+    }
+
+
+
+
+    if (!next){
+        if(GREATER(&tv_new,&tv_tmp) || EQUAL(&tv_new,&tv_tmp)) {
+            printf("INSERT_AFTER__[%ld]\r\n",after++);
+            return INSERT_AFTER;
+        }else{
+            printf("INSERT_BEFORE1__[%ld]\r\n",before1++);
+            return INSERT_BEFORE;
+        }
+    }else{
+        if(GREATER(&tv_new,&tv_tmp) || EQUAL(&tv_new,&tv_tmp)) {
+            printf("INSERT_NO___1___[%ld]\r\n",invalid1++);
+            return INSERT_NO;
+        }else{
+            printf("INSERT_BEFORE__[%ld]\r\n",before++);
+
+            return INSERT_BEFORE;
+        }
+    }
+
+    printf("No_ValidOperation___[%ld]\r\n",invalid++);
+#undef LESS
+#undef GREATER
+#undef EQUAL
+
+
+#else
+//old
+    if(prev && next)
+    {
+        if(timercmp(&tv_new,&tv_tmp,<) &&
+			(timercmp(&tv_new,&tv_prev,>) ||
+			 timercmp(&tv_new,&tv_prev,==)) )
+	{
+            _____packet_comp_line = __LINE__;
+            return INSERT_BEFORE;
+        }else if(timercmp(&tv_new,&tv_tmp,>)){//&& timercmp(&tv_new,&tv_prev,<=)
+            _____packet_comp_line = __LINE__;
+            return INSERT_AFTER;
+        }else if(timercmp(&tv_new,&tv_tmp,==)){
+            _____packet_comp_line = __LINE__;
+            return INSERT_AFTER;
+        }else{
+            _____packet_comp_line = __LINE__;
+            return INSERT_NO;
+        }
+    }else if(!prev && next){
+        if(timercmp(&tv_new,&tv_tmp,>) &&
+			(timercmp(&tv_new,&tv_next,<) ||
+			 timercmp(&tv_new,&tv_next,=)))
+	{ // && timercmp(&tv_new,&tv_next,<=)
+            _____packet_comp_line = __LINE__;
+            return INSERT_AFTER;
+        }else if(timercmp(&tv_new,&tv_tmp,<)) {
+            _____packet_comp_line = __LINE__;
+            return INSERT_BEFORE;
+        }else if(timercmp(&tv_new,&tv_tmp,==)){
+            _____packet_comp_line = __LINE__;
+            return INSERT_AFTER;
+        }else{
+            _____packet_comp_line = __LINE__;
+            return INSERT_NO;
+        }
+    }else if(prev  && !next){
+        if(timercmp(&tv_new,&tv_tmp,<) &&
+			(timercmp(&tv_new,&tv_prev,>) ||
+			 timercmp(&tv_new,&tv_prev,==)))
+	{ //&& timercmp(&tv_new,&tv_prev,>=)
+            _____packet_comp_line = __LINE__;
+            return INSERT_BEFORE;
+        }else if(timercmp(&tv_new,&tv_tmp,>)) {
+            _____packet_comp_line = __LINE__;
+            return INSERT_AFTER;
+        }else if(timercmp(&tv_new,&tv_tmp,==)){
+            _____packet_comp_line = __LINE__;
+            return INSERT_AFTER;
+        }else{
+            _____packet_comp_line = __LINE__;
+            return INSERT_NO;
+        }
+    }else if(!prev && !next){
+        if(timercmp(&tv_new,&tv_tmp,<)){
+            _____packet_comp_line = __LINE__;
+            return INSERT_BEFORE;
+        }else if(timercmp(&tv_new,&tv_tmp,>)) {
+            _____packet_comp_line = __LINE__;
+            return INSERT_AFTER;
+        }else if(timercmp(&tv_new,&tv_tmp,==)){
+            _____packet_comp_line = __LINE__;
+            return INSERT_AFTER;
+        }else{
+            _____packet_comp_line = __LINE__;
+            return INSERT_NO;
+        }
+
+    }
+#endif
+#endif

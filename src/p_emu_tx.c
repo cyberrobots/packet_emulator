@@ -202,9 +202,9 @@ void* p_emu_TxThread_Delayed(void* params)
 
 /* Non Delayed Streams ------------------------------------------------------ */
 
-void p_emu_tx_non_delayed_packet(void* data, slib_node_t* node)
+void p_emu_tx_non_delayed_packet(void* data, void* node)
 {
-	struct p_emu_stream *stream = (struct p_emu_stream *)node->data;
+	struct p_emu_stream *stream = (struct p_emu_stream *)((slib_node_t*)node)->data;
 	slib_node_t *pack_node = NULL;
 	struct p_emu_packet *packet = NULL;
 	int len = -1;

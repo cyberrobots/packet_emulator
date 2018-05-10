@@ -4,10 +4,10 @@
 #include "p_emu_help.h"
 
 
-void p_emu_update_tx_timers(void* data, slib_node_t* node)
+void p_emu_update_tx_timers(void* data, void* node)
 {
 	struct p_emu_timer_list* TimList = (struct p_emu_timer_list*) data;
-	struct p_emu_stream *stream = (struct p_emu_stream *)node->data;
+	struct p_emu_stream *stream = (struct p_emu_stream *)((slib_node_t*)node)->data;
 
 	if(!(stream->delay.flags & DELAY_IS_ENABLED)){
 		return;
@@ -126,9 +126,9 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
 	return;
 }
 
-void p_emu_tx_timers(void* data, slib_node_t* node)
+void p_emu_tx_timers(void* data, void* node)
 {
-	struct p_emu_stream *stream = (struct p_emu_stream *)node->data;
+	struct p_emu_stream *stream = (struct p_emu_stream *)((slib_node_t*)node)->data;
 	uint64_t exp = 0; int s = 0;
 
 	if(!(stream->delay.flags & DELAY_IS_ENABLED)){

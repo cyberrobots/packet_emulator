@@ -142,11 +142,11 @@ int _p_emu_create_socket(const char* interface,uint8_t rx_tx)
 	return sockid;
 }
 
-void _p_emu_open_fds(void *data, slib_node_t * node)
+void _p_emu_open_fds(void *data, void * node)
 {
 	int fd = -1, *error = (int*) data;
 
-	struct p_emu_stream *stream = (struct p_emu_stream *)node->data;
+	struct p_emu_stream *stream = (struct p_emu_stream *)((slib_node_t *)node)->data;
 
 	/* Create Rx Socket descriptor */
 	fd = _p_emu_create_socket((char*)stream->config.rx_iface,0);

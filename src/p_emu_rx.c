@@ -5,10 +5,10 @@
 
 
 
-void p_emu_rx_sock_list_update(void* data, slib_node_t* node)
+void p_emu_rx_sock_list_update(void* data, void* node)
 {
 	struct p_emu_socket_list* sock_list = (struct p_emu_socket_list*) data;
-	struct p_emu_stream *stream = (struct p_emu_stream *)node->data;
+	struct p_emu_stream *stream = (struct p_emu_stream *)((slib_node_t*)node)->data;
 
 	/* Store the biggest socket descriptor. */
 	if(stream->config.rx_iface_fd > sock_list->max_sokcet_fd){
@@ -31,9 +31,9 @@ void p_emu_rx_sock_list_update(void* data, slib_node_t* node)
    We are going to decide later if we are going to keep the packet or not.
 */
 
-void p_emu_rx_packet(void* data, slib_node_t* node)
+void p_emu_rx_packet(void* data, void* node)
 {
-	struct p_emu_stream *stream = (struct p_emu_stream *)node->data;
+	struct p_emu_stream *stream = (struct p_emu_stream *)((slib_node_t*)node)->data;
 
 	struct p_emu_packet *pack = p_emu_packet_init();
 

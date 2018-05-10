@@ -430,9 +430,9 @@ void import_normal_delay(struct p_emu_stream *stream,char* buffer,int len){
 }
 
 
-int p_emu_CheckStreamName(void* data,  slib_node_t * node)
+int p_emu_CheckStreamName(void* data, void * node)
 {
-	struct p_emu_stream *Stream = (struct p_emu_stream *)node->data;
+	struct p_emu_stream *Stream = (struct p_emu_stream *)((slib_node_t*)node)->data;
 
 	char* pch = (char*) data;
 

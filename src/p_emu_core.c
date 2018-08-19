@@ -110,34 +110,35 @@ int _p_emu_create_socket(const char* interface,uint8_t rx_tx)
 		/* Contains current mtu value  */
 		//ifr.ifr_mtu
 	}else{
-		perror("SIOCGIFMTU");
+		perror("Failed to get MTU SIOCGIFMTU");
 		return -1;
 	}
 
-	ifr.ifr_mtu = 2048;
+    // Set mtu to 3000
+	ifr.ifr_mtu = 4000;
 	if(ioctl(sockid, SIOCSIFMTU, &ifr)) {
-		perror("SIOCGIFMTU");
+		perror("Failed to Set MTU SIOCSIFMTU");
 		return -1;
 	}
 
-	//struct packet_mreq mreq = {0};
+    if(!rx_tx){
+        // Set RX interfaces to promiscious mode.
+        strcpy(ifr.ifr_name, interface);
 
+        if(ioctl(sockid, SIOCGIFFLAGS, &ifr)){
+            perror("Get iface flags SIOCGIFFLAGS");
+            return -1;
+        }
 
-	//mreq.mr_ifindex = if_nametoindex(interface);
-	//mreq.mr_type = PACKET_MR_PROMISC;
+        ifr.ifr_flags |= IFF_PROMISC;
 
-	//if (mreq.mr_ifindex == 0) {
-	//	perror("if_nametoindex()");
-	//	return -1;
-	//}
+        if(ioctl(sockid, SIOCSIFFLAGS, &ifr)){
+            perror("Set promiscious mode SIOCSIFFLAGS");
+            return -1;
+        }
+    }
 
-	//if (setsockopt(sockid, SOL_PACKET,0, &mreq, sizeof(mreq)) != 0) {
-	//	perror("unable to enter promiscouous mode");
-	//	return -1;
-	//}
-
-
-	P_ERROR(DBG_INFO,"Socket Creation Success: %d",sockid);
+	P_ERROR(DBG_INFO,"Socket Creation Success: %d [%s]",sockid,(rx_tx==0)?"RXSock":"TxSock");
 
 	return sockid;
 }

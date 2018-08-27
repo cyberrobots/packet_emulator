@@ -395,12 +395,13 @@ void import_uniform_delay(struct p_emu_stream *stream,char* buffer,int len){
 	int max = getInteger(buffer,"max=",strlen("max="));
 
 
-    if(min>0)
+    if(min>0){
         stream->delay.un_delay.min = min;
-
-	if(max>0)
+	}
+	
+	if(max>0){
 		stream->delay.un_delay.max = max;
-
+	}
 	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_UNIFORM);
 
 	return;
@@ -415,14 +416,17 @@ void import_normal_delay(struct p_emu_stream *stream,char* buffer,int len){
     int shift = getInteger(buffer,"shift=",strlen("shift="));
 
 
-    if(mean>0)
+    if(mean>0){
         stream->delay.ga_delay.mean = mean;
+	}
 
-	if(stddev>0)
+	if(stddev>0){
 		stream->delay.ga_delay.stddev = stddev;
+	}
 
-    if(shift>0)
+    if(shift>0){
 		stream->delay.ga_delay.shift = shift;
+	}
 
 	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_GAUSSIAN);
 

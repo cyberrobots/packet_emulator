@@ -4,6 +4,11 @@
 #include "p_emu_help.h"
 
 
+
+
+unsigned int txNonDelayedCounter = 0;
+unsigned int txDelayedCounter = 0;
+
 void p_emu_update_tx_timers(void* data, void* node)
 {
 	struct p_emu_timer_list* TimList = (struct p_emu_timer_list*) data;
@@ -31,7 +36,8 @@ void p_emu_update_tx_timers(void* data, void* node)
 
 void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
 {
-
+#define MAX_RETRIES (30)
+	
 	slib_node_t *pack_node = NULL;
 	struct p_emu_packet *packet = NULL;
 	int len = -1;
@@ -41,9 +47,15 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
 		/* this stream has no packets ready for tx */
         assert(0);
 		return;
+	}else{
+		P_ERROR(DBG_INFO,"False Alarm_____[%p]",stream->tx_list);
 	}
 
 	packet = (struct p_emu_packet *)pack_node->data;
+	
+	P_ERROR(DBG_INFO,"Sending packet [%d] node[%p] _packNo[%u]",packet->length,pack_node,txDelayedCounter);
+	txDelayedCounter++;
+	
 #if 0
 	len = sendto(stream->config.tx_iface_fd, ( const void *)packet->payload,
 		     (size_t)packet->length,0,NULL, 0);
@@ -204,6 +216,8 @@ void* p_emu_TxThread_Delayed(void* params)
 
 void p_emu_tx_non_delayed_packet(void* data, void* node)
 {
+#define MAX_RETRIES (30)
+	
 	struct p_emu_stream *stream = (struct p_emu_stream *)((slib_node_t*)node)->data;
 	slib_node_t *pack_node = NULL;
 	struct p_emu_packet *packet = NULL;
@@ -222,7 +236,8 @@ void p_emu_tx_non_delayed_packet(void* data, void* node)
 
 	packet = (struct p_emu_packet *)pack_node->data;
 
-	P_ERROR(DBG_INFO,"Sending packet [%d]",packet->length);
+	P_ERROR(DBG_INFO,"Sending packet [%d] _packNo[%u]",packet->length,txNonDelayedCounter);
+	txNonDelayedCounter++;
 #if 0
 	len = sendto(stream->config.tx_iface_fd, ( const void *)packet->payload,
 		     (size_t)packet->length,0,NULL, 0);
@@ -235,7 +250,7 @@ void p_emu_tx_non_delayed_packet(void* data, void* node)
 	}
 #else
 
-    int tries = 30;
+    int tries = MAX_RETRIES;
     do
     {
         len = sendto(stream->config.tx_iface_fd, ( const void *)packet->payload,

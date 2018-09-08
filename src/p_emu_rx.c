@@ -3,7 +3,7 @@
 #include "p_emu_core.h"
 #include "p_emu_help.h"
 
-
+unsigned int rxCounter = 0;
 
 void p_emu_rx_sock_list_update(void* data, void* node)
 {
@@ -49,13 +49,14 @@ void p_emu_rx_packet(void* data, void* node)
 	{
 		clock_gettime(CLOCK_REALTIME,&pack->arrival);
 
-		P_ERROR(DBG_INFO,"S(%d) Len (%d) Time [%lu]s [%lu]ns ___p[%p]",
+		P_ERROR(DBG_INFO,"S(%d) Len (%d) Time [%lu]s [%lu]ns ___p[%p] __packNo[%u]",
 			stream->config.rx_iface_fd,
 			pack->length,
 			pack->arrival.tv_sec,
 		        pack->arrival.tv_nsec,
-		        pack);
-
+		        pack,rxCounter);
+		rxCounter++;
+		
 		if(slib_list_add_last_node
 				(stream->rx_list,&pack->node)!=LIST_OP_SUCCESS){
 			P_ERROR(DBG_WARN,"Importing frame failed!!!");

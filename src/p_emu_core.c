@@ -42,7 +42,11 @@ int _p_emu_create_socket(const char* interface,uint8_t rx_tx)
 		return -1;
 	}
 
-	sockid = socket(AF_PACKET,SOCK_RAW,htons(ETH_P_ALL));
+	if(!rx_tx){
+		sockid = socket(AF_PACKET,SOCK_RAW,htons(ETH_P_ALL));
+	}else{
+		sockid = socket(AF_PACKET,SOCK_RAW,IPPROTO_RAW);
+	}
 
 	/* Get settings */
 	set = fcntl(sockid,F_GETFL, 0);

@@ -171,42 +171,46 @@ int pack_emu_sort_insert(void* newNode, void* currNode,
 
     struct timeval nVal;          // Node Inserted now
     struct timeval cVal;          // Node that the list points
-    struct timeval pVal;         // Node previous of the tmp
-    struct timeval nxVal;         // Node next of the next
+    //struct timeval pVal;         // Node previous of the tmp
+    //struct timeval nxVal;         // Node next of the next
     int result = INSERT_INVALID;
 
-    P_EMU_UNUSED(nVal);
-    P_EMU_UNUSED(cVal);
-    P_EMU_UNUSED(pVal);
-    P_EMU_UNUSED(nxVal);
+    //P_EMU_UNUSED(nVal);
+    //P_EMU_UNUSED(cVal);
+    //P_EMU_UNUSED(pVal);
+    //P_EMU_UNUSED(nxVal);
 
-
+	uint8_t nextExists = 0;
+	uint8_t prevExists = 0;
     struct timespec nleave = ((struct p_emu_packet *)(((slib_node_t*)newNode)->data))->leave;
     struct timespec cleave = ((struct p_emu_packet *)(((slib_node_t*)currNode)->data))->leave;
-    struct timespec pleave = ((struct p_emu_packet *)(((slib_node_t*)prevNode)->data))->leave;
-    struct timespec nxleave = ((struct p_emu_packet *)(((slib_node_t*)nextNode)->data))->leave;
+    //struct timespec pleave = ((struct p_emu_packet *)(((slib_node_t*)prevNode)->data))->leave;
+    //struct timespec nxleave = ((struct p_emu_packet *)(((slib_node_t*)nextNode)->data))->leave;
 
     if(prevNode){
-        TIMESPEC_TO_TIMEVAL(pVal,pleave);
+        //TIMESPEC_TO_TIMEVAL(pVal,pleave);
+		prevExists=1;
     }
 
     if(nextNode){
-        TIMESPEC_TO_TIMEVAL(nxVal,nxleave);
+        //TIMESPEC_TO_TIMEVAL(nxVal,nxleave);
+		nextExists =1;
     }
 
     TIMESPEC_TO_TIMEVAL(cVal,cleave);
     TIMESPEC_TO_TIMEVAL(nVal,nleave);
 
-    if((LESS(&nVal,&cVal)) && (!prevNode)){
+    if((LESS(&nVal,&cVal)) && (prevExists==0)){
         result = INSERT_BEFORE;
     }else
-    if((GREATER(&nVal,&cVal) || EQUAL(&nVal,&cVal)) && (!nextNode)){
+    if((GREATER(&nVal,&cVal) || EQUAL(&nVal,&cVal)) && (nextExists==0)){
         result = INSERT_AFTER;
     }else
-    if((GREATER(&nVal,&cVal) || EQUAL(&nVal,&cVal)) && (nextNode)){
+    if((GREATER(&nVal,&cVal) || EQUAL(&nVal,&cVal)) && (nextExists==1)){
         result = INSERT_NO;
     }else
-    if((LESS(&nVal,&cVal)) && (prevNode)){
+    if((LESS(&nVal,&cVal)) && (prevExists==1))
+	{
         result = INSERT_BEFORE;
     }else{
         assert(0);

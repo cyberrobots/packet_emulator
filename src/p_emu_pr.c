@@ -86,7 +86,20 @@ configuration */
 
 int p_emu_loss_check(struct p_emu_stream *stream,struct p_emu_packet *pack)
 {
-	return P_EMU_KEEP_PACKET;
+#define LOSS_ACCURACY (100000) // three decimal digits
+	
+	int result = P_EMU_KEEP_PACKET;
+	int tempRand = 0;
+	
+	if(stream->loss.flags & LOSS_IS_ENABLED){
+		P_ERROR(DBG_INFO,"Packet loss is enabled for this stream {%s} -> %f",stream->stream_name,stream->loss.percentage);
+		tempRand = rand() % (LOSS_ACCURACY + 1);
+		if(tempRand < ((stream->loss.percentage / 100) * LOSS_ACCURACY )){
+			result = P_EMU_DISCARD_PACKET;
+		}
+	}
+	
+	return result;
 }
 
 /* Calculate packet's delay based stream's configuration */

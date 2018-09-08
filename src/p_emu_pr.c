@@ -148,6 +148,52 @@ void p_emu_delay_calculate(struct p_emu_stream *stream,struct p_emu_packet *pack
 
             break;
         }
+		case DELAY_IS_EXPONENTIAL:
+		{
+			P_ERROR(DBG_INFO,"___DELAY_IS_EXPONENTIAL___");
+		
+            long delay = exponential((void *)&stream->delay.ex_delay);
+
+			pack->leave.tv_sec = pack->arrival.tv_sec;
+
+            pack->leave.tv_nsec = pack->arrival.tv_nsec + delay;
+			break;
+		}
+		case DELAY_IS_POISSON:
+		{
+			P_ERROR(DBG_INFO,"___DELAY_IS_POISSON___");
+			
+            long delay = poisson((void *)&stream->delay.po_delay);
+
+			pack->leave.tv_sec = pack->arrival.tv_sec;
+
+            pack->leave.tv_nsec = pack->arrival.tv_nsec + delay;
+
+			break;
+		}
+		case DELAY_IS_PARETO_I:
+		{
+			P_ERROR(DBG_INFO,"___DELAY_IS_PARETO_I___");
+			
+            long delay = paretoI((void *)&stream->delay.pa_delay);
+
+			pack->leave.tv_sec = pack->arrival.tv_sec;
+
+            pack->leave.tv_nsec = pack->arrival.tv_nsec + delay;
+
+			break;
+		}
+		case DELAY_IS_PARETO_II:
+		{
+			P_ERROR(DBG_INFO,"___DELAY_IS_PARETO_II___");
+			
+            long delay = paretoII_lomax((void *)&stream->delay.paII_delay);
+
+			pack->leave.tv_sec = pack->arrival.tv_sec;
+
+            pack->leave.tv_nsec = pack->arrival.tv_nsec + delay;
+			break;
+		}
 
 		default:
 			break;

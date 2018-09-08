@@ -33,50 +33,60 @@ unsigned long rand_normal(void *data){
         return (long)(n2* p->stddev + p->mean + p->shift );
      }
 }
-long exponential(double lamda,int factor,int shift)
+unsigned long exponential(void* data)
 {
+	struct p_emu_exponential_delay* p = (struct p_emu_exponential_delay*)data;
+	
 	long result;
 	double x;
 	x=((double) rand() / (RAND_MAX));
-	result=(shift+(factor*((-1)*(1/lamda)*log(x))));
+	result=(p->shift+(p->factor*((-1)*(1/p->lamda)*log(x))));
 	return result;
 
 }
-int poissonRandom(double expectedValue,int factor,int shift)
+unsigned long poisson(void* data)
 {
-	int n;
+	struct p_emu_poisson_delay* p = (struct p_emu_poisson_delay*)data;
+	
+	int n; 
 	double x;
-	n=1;
-	x=1.0;
-	x=(double) rand()/INT_MAX;
-	while(x>=exp((-1)*expectedValue)){
-		x=(x*((double) rand()/INT_MAX));
-		n=n+1;
+	n = 1;
+	x = 1.0;
+	x = (double) rand()/INT_MAX;
+	while( x >= exp((-1) * p->expected ) ){
+		x = (x*((double) rand() / INT_MAX));
+		n = n + 1;
 	}
-	n=shift+(factor*n);
+	n = p->shift + (p->factor * n);
 	return n;
 }
 
-int	paretoII_lomax(int factor,int shift, double alfa,double sigm,double mmi)
+
+unsigned long paretoI(void* data)
 {
+	struct p_emu_pareto_delay* p = (struct p_emu_pareto_delay*)data;
+	
 	/*Pareto I distribution.*/
 	double r;
 	double out;
-	r	=((double) rand() / (RAND_MAX));
-	out	=(1- ( pow ( ( ( r-mmi) / sigm ),( (-1)*alfa) ) ) );
-	out	=shift+(factor*out);
-	return (int)out;
+	r	= ((double) rand() / (RAND_MAX));
+	out	= (pow((r / p->sigm),((-1) * p->alfa)));
+	out	= p->shift + (p->factor * out);
+	return (int) out;
 }
-int	paretoI(int factor,int shift, double alfa,double sigm)
+
+unsigned long paretoII_lomax(void* data)
 {
-	/*Pareto I distribution.*/
+	struct p_emu_paretoII_delay* p = (struct p_emu_paretoII_delay*)data;
+	/*Pareto II distribution.*/
 	double r;
 	double out;
 	r	=((double) rand() / (RAND_MAX));
-	out	=(pow((r/sigm),((-1)*alfa)));
-	out	=shift+(factor*out);
+	out	=(1- ( pow ( ( ( r- p->mmi) / p->sigm ),( (-1)* p->alfa) ) ) );
+	out	= p->shift + (p->factor * out);
 	return (int)out;
 }
+
 
 unsigned long uniform(void *data)
 {

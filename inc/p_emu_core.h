@@ -40,10 +40,14 @@ struct p_emu_filter_config {
 /* Delay -------------------------------------------------------------------- */
 
 enum p_emu_delay_flags {
-	DELAY_IS_ENABLED 	= 1,
-	DELAY_IS_STATIC		= 1 << 1,
-	DELAY_IS_UNIFORM	= 1 << 2,
-	DELAY_IS_GAUSSIAN	= 1 << 3,
+	DELAY_IS_ENABLED		= 1,
+	DELAY_IS_STATIC			= 1 << 1,
+	DELAY_IS_UNIFORM		= 1 << 2,
+	DELAY_IS_GAUSSIAN		= 1 << 3,
+	DELAY_IS_EXPONENTIAL	= 1 << 4,
+	DELAY_IS_POISSON		= 1 << 5,
+	DELAY_IS_PARETO_I		= 1 << 6,
+	DELAY_IS_PARETO_II		= 1 << 7,
 };
 
 struct p_emu_static_delay {
@@ -62,15 +66,30 @@ struct p_emu_gaussian_delay {
 };
 
 struct p_emu_poisson_delay {
-	struct timespec d;
+	double 	expected;			// expected 
+	int 	factor;				// factor
+	int 	shift;				// shift
 };
 
 struct p_emu_exponential_delay {
-	struct timespec d;
+    double	lamda;                 // lamda
+    int 	factor;                // factor
+    int		shift;                 // shift
 };
 
 struct p_emu_pareto_delay {
-	struct timespec d;
+	double 	alfa;
+	double 	sigm;
+	int		factor;
+	int		shift;
+};
+
+struct p_emu_paretoII_delay {
+	double 	alfa;
+	double 	sigm;
+	double 	mmi;
+	int		factor;
+	int		shift;
 };
 
 struct p_emu_delay_config {
@@ -81,6 +100,7 @@ struct p_emu_delay_config {
     struct p_emu_poisson_delay      po_delay;
     struct p_emu_exponential_delay  ex_delay;
     struct p_emu_pareto_delay       pa_delay;
+	struct p_emu_paretoII_delay     paII_delay;
 };
 
 /* Loss --------------------------------------------------------------------- */

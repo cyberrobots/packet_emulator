@@ -99,6 +99,7 @@ void p_emu_interfaces( void )
 #define STREAM_STATIC_DELAY     "static_delay:"
 #define STREAM_UNIFORM_DELAY    "uniform_delay:"
 #define STREAM_NORMAL_DELAY     "normal_delay:"
+#define STREAM_EXP_DELAY     	"exp_delay:"
 
 /* Configuration Callbacks */
 #define P_EMU_IMP_FUNC(m)	void(m)(struct p_emu_stream *stream,char* buffer,int len)
@@ -113,12 +114,11 @@ P_EMU_IMP_FUNC(import_input_iface);
 P_EMU_IMP_FUNC(import_output_iface);
 /* Import Distr Attributes. */
 P_EMU_IMP_FUNC(import_normal_delay);
-//P_EMU_IMP_FUNC(import_exponential);
-//P_EMU_IMP_FUNC(import_poisson);
+P_EMU_IMP_FUNC(import_exponential);
+P_EMU_IMP_FUNC(import_poisson);
 P_EMU_IMP_FUNC(import_uniform_delay);
-//P_EMU_IMP_FUNC(import_static);
-//P_EMU_IMP_FUNC(import_pareto);
-//P_EMU_IMP_FUNC(import_pareto_2);
+P_EMU_IMP_FUNC(import_pareto);
+P_EMU_IMP_FUNC(import_pareto_ii);
 P_EMU_IMP_FUNC(import_loss);
 P_EMU_IMP_FUNC(import_static_delay);
 
@@ -127,14 +127,15 @@ P_EMU_IMP_FUNC(import_static_delay);
 static p_emu_import_entry_t p_emu_import_table[]=
 {
 	//{STREAM_NAME , import_stream_name },
-	{STREAM_DST_MAC , import_dst_mac },
-	{STREAM_SRC_MAC , import_src_mac },
-	{STREAM_IN_IFACE , import_input_iface },
-	{STREAM_OUT_IFACE , import_output_iface },
-	{STREAM_LOSS_PERCENTAGE,import_loss },
-	{STREAM_STATIC_DELAY,import_static_delay },
-	{STREAM_UNIFORM_DELAY,import_uniform_delay },
-    {STREAM_NORMAL_DELAY,import_normal_delay},
+	{STREAM_DST_MAC 		, import_dst_mac },
+	{STREAM_SRC_MAC 		, import_src_mac },
+	{STREAM_IN_IFACE 		, import_input_iface },
+	{STREAM_OUT_IFACE 		, import_output_iface },
+	{STREAM_LOSS_PERCENTAGE	, import_loss },
+	{STREAM_STATIC_DELAY	, import_static_delay },
+	{STREAM_UNIFORM_DELAY	, import_uniform_delay },
+    {STREAM_NORMAL_DELAY	, import_normal_delay},
+	{STREAM_EXP_DELAY		, import_exponential},
 };
 
 #define NUM_OF_IMPORT_PARAMS ( TABLE_SIZE_OF(p_emu_import_table) )
@@ -429,6 +430,39 @@ void import_normal_delay(struct p_emu_stream *stream,char* buffer,int len){
 	}
 
 	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_GAUSSIAN);
+
+	return;
+}
+
+
+
+void import_exponential(struct p_emu_stream *stream,char* buffer,int len){
+
+	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_EXPONENTIAL);
+
+	return;
+}
+
+
+void import_poisson(struct p_emu_stream *stream,char* buffer,int len){
+
+	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_POISSON);
+
+	return;
+}
+
+
+
+void import_pareto(struct p_emu_stream *stream,char* buffer,int len){
+
+	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_PARETO_I);
+
+	return;
+}
+
+void import_pareto_ii(struct p_emu_stream *stream,char* buffer,int len){
+
+	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_PARETO_II);
 
 	return;
 }

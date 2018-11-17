@@ -438,6 +438,28 @@ void import_normal_delay(struct p_emu_stream *stream,char* buffer,int len){
 
 void import_exponential(struct p_emu_stream *stream,char* buffer,int len){
 
+	
+	double lamda = getFloat(buffer,"lamda=",strlen("lamda="));
+
+	int factor = getInteger(buffer,"factor=",strlen("factor="));
+	
+    int shift = getInteger(buffer,"shift=",strlen("shift="));
+	
+	
+	if(lamda!=-1.0){
+        stream->delay.ex_delay.lamda = lamda;
+	}
+
+	if(factor>0){
+		stream->delay.ex_delay.factor = factor;
+	}
+
+    if(shift>0){
+		stream->delay.ex_delay.shift = shift;
+	}
+	
+	
+	
 	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_EXPONENTIAL);
 
 	return;
@@ -445,7 +467,26 @@ void import_exponential(struct p_emu_stream *stream,char* buffer,int len){
 
 
 void import_poisson(struct p_emu_stream *stream,char* buffer,int len){
+	
+	double expected = getFloat(buffer,"expected=",strlen("expected="));
 
+	int factor = getInteger(buffer,"factor=",strlen("factor="));
+	
+    int shift = getInteger(buffer,"shift=",strlen("shift="));
+	
+	
+	if(expected!=-1.0){
+        stream->delay.po_delay.expected = expected;
+	}
+
+	if(factor>0){
+		stream->delay.po_delay.factor = factor;
+	}
+
+    if(shift>0){
+		stream->delay.po_delay.shift = shift;
+	}
+	
 	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_POISSON);
 
 	return;
@@ -454,6 +495,33 @@ void import_poisson(struct p_emu_stream *stream,char* buffer,int len){
 
 
 void import_pareto(struct p_emu_stream *stream,char* buffer,int len){
+	
+	
+	double alfa = getFloat(buffer,"alfa=",strlen("alfa="));
+	
+	double sigm = getFloat(buffer,"sigm=",strlen("sigm="));
+
+	int factor = getInteger(buffer,"factor=",strlen("factor="));
+	
+    int shift = getInteger(buffer,"shift=",strlen("shift="));
+	
+	
+	if(alfa!=-1.0){
+        stream->delay.pa_delay.alfa = alfa;
+	}
+	
+	if(sigm!=-1.0){
+        stream->delay.pa_delay.sigm = sigm;
+	}
+
+	if(factor>0){
+		stream->delay.pa_delay.factor = factor;
+	}
+
+    if(shift>0){
+		stream->delay.pa_delay.shift = shift;
+	}
+	
 
 	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_PARETO_I);
 
@@ -461,6 +529,39 @@ void import_pareto(struct p_emu_stream *stream,char* buffer,int len){
 }
 
 void import_pareto_ii(struct p_emu_stream *stream,char* buffer,int len){
+	
+	
+	
+	double alfa = getFloat(buffer,"alfa=",strlen("alfa="));
+	
+	double sigm = getFloat(buffer,"sigm=",strlen("sigm="));
+	
+	double mmi = getFloat(buffer,"mmi=",strlen("mmi="));
+
+	int factor = getInteger(buffer,"factor=",strlen("factor="));
+	
+    int shift = getInteger(buffer,"shift=",strlen("shift="));
+	
+	
+	if(alfa!=-1.0){
+        stream->delay.paII_delay.alfa = alfa;
+	}
+	
+	if(sigm!=-1.0){
+        stream->delay.paII_delay.sigm = sigm;
+	}
+	
+	if(mmi!=-1.0){
+        stream->delay.paII_delay.mmi = mmi;
+	}
+
+	if(factor>0){
+		stream->delay.paII_delay.factor = factor;
+	}
+
+    if(shift>0){
+		stream->delay.paII_delay.shift = shift;
+	}
 
 	stream->delay.flags = (DELAY_IS_ENABLED | DELAY_IS_PARETO_II);
 

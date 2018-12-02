@@ -100,6 +100,7 @@ void p_emu_interfaces( void )
 #define STREAM_UNIFORM_DELAY    "uniform_delay:"
 #define STREAM_NORMAL_DELAY     "normal_delay:"
 #define STREAM_EXP_DELAY     	"exp_delay:"
+#define STREAM_PARETO_DELAY    	"pareto_delay:"
 
 /* Configuration Callbacks */
 #define P_EMU_IMP_FUNC(m)	void(m)(struct p_emu_stream *stream,char* buffer,int len)
@@ -136,6 +137,7 @@ static p_emu_import_entry_t p_emu_import_table[]=
 	{STREAM_UNIFORM_DELAY	, import_uniform_delay },
     {STREAM_NORMAL_DELAY	, import_normal_delay},
 	{STREAM_EXP_DELAY		, import_exponential},
+	{STREAM_PARETO_DELAY	, import_pareto},
 };
 
 #define NUM_OF_IMPORT_PARAMS ( TABLE_SIZE_OF(p_emu_import_table) )
@@ -447,6 +449,7 @@ void import_exponential(struct p_emu_stream *stream,char* buffer,int len){
 	
 	
 	if(lamda!=-1.0){
+		P_ERROR(DBG_INFO,"_____lamda______%lf",lamda);
         stream->delay.ex_delay.lamda = lamda;
 	}
 
@@ -497,21 +500,21 @@ void import_poisson(struct p_emu_stream *stream,char* buffer,int len){
 void import_pareto(struct p_emu_stream *stream,char* buffer,int len){
 	
 	
-	double alfa = getFloat(buffer,"alfa=",strlen("alfa="));
+	double shape = getFloat(buffer,"shape=",strlen("shape="));
 	
-	double sigm = getFloat(buffer,"sigm=",strlen("sigm="));
+	double scale = getFloat(buffer,"scale=",strlen("scale="));
 
 	int factor = getInteger(buffer,"factor=",strlen("factor="));
 	
     int shift = getInteger(buffer,"shift=",strlen("shift="));
 	
 	
-	if(alfa!=-1.0){
-        stream->delay.pa_delay.alfa = alfa;
+	if(shape!=-1.0){
+        stream->delay.pa_delay.shape = shape;
 	}
 	
-	if(sigm!=-1.0){
-        stream->delay.pa_delay.sigm = sigm;
+	if(scale!=-1.0){
+        stream->delay.pa_delay.scale = scale;
 	}
 
 	if(factor>0){

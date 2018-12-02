@@ -78,8 +78,8 @@ struct p_emu_exponential_delay {
 };
 
 struct p_emu_pareto_delay {
-	double 	alfa;
-	double 	sigm;
+	double 	shape;
+	double 	scale;
 	int		factor;
 	int		shift;
 };

@@ -36,13 +36,20 @@ unsigned long rand_normal(void *data){
 unsigned long exponential(void* data)
 {
 	struct p_emu_exponential_delay* p = (struct p_emu_exponential_delay*)data;
+#if 0
+	struct p_emu_exponential_delay* p = (struct p_emu_exponential_delay*)data;
 	
 	long result;
 	double x;
 	x=((double) rand() / (RAND_MAX));
 	result=(p->shift+(p->factor*((-1)*(1/p->lamda)*log(x))));
 	return result;
-
+#endif
+	long result = -1;
+	double U = ((double) rand() / (RAND_MAX));
+	
+	result = ((-1)*p->lamda) * log ( 1 - U );
+	return result;
 }
 unsigned long poisson(void* data)
 {
@@ -65,14 +72,29 @@ unsigned long poisson(void* data)
 unsigned long paretoI(void* data)
 {
 	struct p_emu_pareto_delay* p = (struct p_emu_pareto_delay*)data;
+
+	/*Pareto I distribution. as described http://www.ntrand.com/pareto-distribution */
+
+	/*
+		pow(x,y)
+		This function returns the result of raising x to the power y.
+	*/
+
+	double U 			= ((double) rand() / (RAND_MAX));
+	double out 			= (1 / (1 - U));
+	double inv_shape 	= (1 / p->shape);
+	out 				= pow(out,inv_shape);
+	out 				= out * p->scale;
 	
-	/*Pareto I distribution.*/
-	double r;
+	return (unsigned long) out;
+#if 0	
+	/*double r;
 	double out;
-	r	= ((double) rand() / (RAND_MAX));
+	r	= 
 	out	= (pow((r / p->sigm),((-1) * p->alfa)));
 	out	= p->shift + (p->factor * out);
-	return (int) out;
+	*/
+#endif	
 }
 
 unsigned long paretoII_lomax(void* data)
@@ -82,7 +104,7 @@ unsigned long paretoII_lomax(void* data)
 	double r;
 	double out;
 	r	=((double) rand() / (RAND_MAX));
-	out	=(1- ( pow ( ( ( r- p->mmi) / p->sigm ),( (-1)* p->alfa) ) ) );
+	out	=(1- ( pow ( ( ( r - p->mmi) / p->sigm ),( (-1)* p->alfa) ) ) );
 	out	= p->shift + (p->factor * out);
 	return (int)out;
 }

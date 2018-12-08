@@ -262,8 +262,8 @@ void p_emu_tx_non_delayed_packet(void* data, void* node)
         if(len!= packet->length && errno==EAGAIN){
             tries--;
         }else{
-            P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d]",
-                len,strerror(errno),errno);
+            P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d][%d]",
+                len,strerror(errno),errno,tries);
             assert(0);
         }
 
@@ -271,8 +271,8 @@ void p_emu_tx_non_delayed_packet(void* data, void* node)
     }while(tries);
 
     if(!tries){
-        P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d]",
-                len,strerror(errno),errno);
+        P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d][%d]",
+                len,strerror(errno),errno,tries);
         printf("Failed Sending packet [%d]__[%s][%d]\r\n",
                 len,strerror(errno),errno);
         assert(0);

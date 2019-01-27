@@ -31,7 +31,7 @@ interface : Interface's name
 rx_tx : Rx interface 0, Tx interface 1
 ------------------------------------------------------------------------------*/
 
-int _p_emu_create_socket(const char* interface,uint8_t rx_tx)
+int _p_emu_create_socket(const char* interface,uint8_t istx)
 {
 	int ifindex = 0, sockid = 0, err = -1, set = 0;
 
@@ -39,24 +39,34 @@ int _p_emu_create_socket(const char* interface,uint8_t rx_tx)
 	struct ifreq ifr;
 
 	if(!interface){
+		P_ERROR(DBG_ERROR,"Socket Creation failed!");
 		return -1;
 	}
 
-	if(!rx_tx){
+	if(!istx){
+		// Rx all known protocols
 		sockid = socket(AF_PACKET,SOCK_RAW,htons(ETH_P_ALL));
 	}else{
+		// Tx all protocols in header
 		sockid = socket(AF_PACKET,SOCK_RAW,IPPROTO_RAW);
+	}
+	
+	if(sockid<=0){
+		P_ERROR(DBG_ERROR,"Socket Creation failed! Error [%d]",sockid);
+		return -1;
 	}
 
 	/* Get settings */
 	set = fcntl(sockid,F_GETFL, 0);
 	if(set < 0){
+		P_ERROR(DBG_ERROR,"Socket Creation failed!");
 		return -1;
 	}
 
 	/* Set Settings plus NON Blocking flag */
 	err = fcntl(sockid, F_SETFL, set | O_NONBLOCK);
 	if(err < 0){
+		P_ERROR(DBG_ERROR,"Socket Creation failed!");
 		return -1;
 	}
 
@@ -72,6 +82,7 @@ int _p_emu_create_socket(const char* interface,uint8_t rx_tx)
 
 	/* Check if the interface is active */
 	if(!(ifr.ifr_flags & IFF_UP)){
+		P_ERROR(DBG_ERROR,"Socket Creation failed!");
 		return -1;
 	}
  	/* Get Interface's index number */
@@ -125,7 +136,7 @@ int _p_emu_create_socket(const char* interface,uint8_t rx_tx)
 		return -1;
 	}
 
-    if(!rx_tx){
+    if(!istx){
         // Set RX interfaces to promiscious mode.
         strcpy(ifr.ifr_name, interface);
 
@@ -140,9 +151,15 @@ int _p_emu_create_socket(const char* interface,uint8_t rx_tx)
             perror("Set promiscious mode SIOCSIFFLAGS");
             return -1;
         }
-    }
 
-	P_ERROR(DBG_INFO,"Socket Creation Success: %d [%s]",sockid,(rx_tx==0)?"RXSock":"TxSock");
+		// if socket is rx, close tx path.
+		shutdown(sockid,SHUT_WR);
+    }else{
+		// if socket is tx, close rx path.
+		shutdown(sockid,SHUT_RD);
+	}
+
+	P_ERROR(DBG_INFO,"Socket Creation Success: %d [%s]",sockid,(istx==0)?"RXSock":"TxSock");
 
 	return sockid;
 }

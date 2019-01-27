@@ -4,7 +4,7 @@
 #include "p_emu_help.h"
 
 
-
+#define MAX_TX_RETRIES (30)
 
 unsigned int txNonDelayedCounter = 0;
 unsigned int txDelayedCounter = 0;
@@ -36,7 +36,7 @@ void p_emu_update_tx_timers(void* data, void* node)
 
 void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
 {
-#define MAX_RETRIES (30)
+
 	
 	slib_node_t *pack_node = NULL;
 	struct p_emu_packet *packet = NULL;
@@ -67,11 +67,11 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
 		assert(0);
 	}
 #else
-    int tries = 30;
+    int tries = MAX_TX_RETRIES;
     do
     {
         len = sendto(stream->config.tx_iface_fd, ( const void *)packet->payload,
-		     (size_t)packet->length,0,NULL, 0);
+		     (size_t)packet->length,MSG_DONTROUTE,NULL, 0);
         if(len == packet->length){
             break;
         }
@@ -95,7 +95,7 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
                 len,strerror(errno),errno);
 		printf("Failed Sending packet [%d]__[%s][%d]\r\n",
                 len,strerror(errno),errno);
-        assert(0);
+        //assert(0);
     }
 
 #endif
@@ -216,7 +216,6 @@ void* p_emu_TxThread_Delayed(void* params)
 
 void p_emu_tx_non_delayed_packet(void* data, void* node)
 {
-#define MAX_RETRIES (30)
 	
 	struct p_emu_stream *stream = (struct p_emu_stream *)((slib_node_t*)node)->data;
 	slib_node_t *pack_node = NULL;
@@ -250,11 +249,11 @@ void p_emu_tx_non_delayed_packet(void* data, void* node)
 	}
 #else
 
-    int tries = MAX_RETRIES;
+    int tries = MAX_TX_RETRIES;
     do
     {
         len = sendto(stream->config.tx_iface_fd, ( const void *)packet->payload,
-		     (size_t)packet->length,0,NULL, 0);
+		     (size_t)packet->length,MSG_DONTROUTE,NULL, 0);
         if(len == packet->length){
             break;
         }
@@ -262,9 +261,9 @@ void p_emu_tx_non_delayed_packet(void* data, void* node)
         if(len!= packet->length && errno==EAGAIN){
             tries--;
         }else{
-            P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d][%d]",
-                len,strerror(errno),errno,tries);
-            assert(0);
+            P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d][%d]_____plen[%d]",
+                len,strerror(errno),errno,tries,packet->length);
+            //assert(0);
         }
 
 
@@ -336,6 +335,7 @@ void* p_emu_TxThread(void* params)
 
 	}
 
+#undef MAX_TX_RETRIES
 
 	return NULL;
 }

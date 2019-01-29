@@ -19,11 +19,15 @@ static struct p_emu_tx_config __p_emu_tx_config;
 
 static struct p_emu_pr_config __p_emu_pr_config;
 
+static struct p_emu_tx_config __p_emu_rev_config;
+
 
 void* p_emu_RxThread(void* params);
 void* p_emu_TxThread(void* params);
 void* p_emu_PrThread(void* params);
 void* p_emu_TxThread_Delayed(void* params);
+
+void* p_emu_ReversePathThread(void* params);
 
 
 /* Create socket descriptor ---------------------------------------------------/
@@ -48,7 +52,8 @@ int _p_emu_create_socket(const char* interface,uint8_t istx)
 		sockid = socket(AF_PACKET,SOCK_RAW,htons(ETH_P_ALL));
 	}else{
 		// Tx all protocols in header
-		sockid = socket(AF_PACKET,SOCK_RAW,IPPROTO_RAW);
+		//sockid = socket(AF_PACKET,SOCK_RAW,IPPROTO_RAW);
+		sockid = socket(AF_PACKET,SOCK_RAW,htons(ETH_P_ALL));
 	}
 	
 	if(sockid<=0){
@@ -130,33 +135,35 @@ int _p_emu_create_socket(const char* interface,uint8_t istx)
 	}
 
     // Set mtu to 3000
-	ifr.ifr_mtu = 4000;
+	ifr.ifr_mtu = 8000;
 	if(ioctl(sockid, SIOCSIFMTU, &ifr)) {
 		perror("Failed to Set MTU SIOCSIFMTU");
 		return -1;
 	}
 
+	
+	// Set RX interfaces to promiscious mode.
+	strcpy(ifr.ifr_name, interface);
+
+	if(ioctl(sockid, SIOCGIFFLAGS, &ifr)){
+		perror("Get iface flags SIOCGIFFLAGS");
+		return -1;
+	}
+
+	ifr.ifr_flags |= IFF_PROMISC;
+
+	if(ioctl(sockid, SIOCSIFFLAGS, &ifr)){
+		perror("Set promiscious mode SIOCSIFFLAGS");
+		return -1;
+	}
+	
+	
     if(!istx){
-        // Set RX interfaces to promiscious mode.
-        strcpy(ifr.ifr_name, interface);
-
-        if(ioctl(sockid, SIOCGIFFLAGS, &ifr)){
-            perror("Get iface flags SIOCGIFFLAGS");
-            return -1;
-        }
-
-        ifr.ifr_flags |= IFF_PROMISC;
-
-        if(ioctl(sockid, SIOCSIFFLAGS, &ifr)){
-            perror("Set promiscious mode SIOCSIFFLAGS");
-            return -1;
-        }
-
 		// if socket is rx, close tx path.
-		shutdown(sockid,SHUT_WR);
+		//shutdown(sockid,SHUT_WR);
     }else{
 		// if socket is tx, close rx path.
-		shutdown(sockid,SHUT_RD);
+		//shutdown(sockid,SHUT_RD);
 	}
 
 	P_ERROR(DBG_INFO,"Socket Creation Success: %d [%s]",sockid,(istx==0)?"RXSock":"TxSock");
@@ -222,6 +229,7 @@ int p_emu_start(slib_root_t* streams)
 	pthread_t      p_emu_pr_ThreadId;
 	pthread_t      p_emu_tx_ThreadId;
 	pthread_t      p_emu_tx_ThreadId_Delay;
+	pthread_t      p_emu_Reverse_ThreadId;
 
 #ifdef P_EMU_USE_SEMS
 	p_emu_init_rx_path();
@@ -236,12 +244,16 @@ int p_emu_start(slib_root_t* streams)
 	memset(&__p_emu_rx_config,0,sizeof(struct p_emu_rx_config));
 	memset(&__p_emu_tx_config,0,sizeof(struct p_emu_tx_config));
 	memset(&__p_emu_pr_config,0,sizeof(struct p_emu_pr_config));
+	memset(&__p_emu_rev_config,0,sizeof(struct p_emu_rev_config));
 
 	__p_emu_rx_config.streams = streams;
 
 	__p_emu_tx_config.streams = streams;
 
 	__p_emu_pr_config.streams = streams;
+	
+	__p_emu_rev_config.streams= streams;
+	
 
 	void 			**RxstatusID = NULL;	// Thread's Return status
 	err = pthread_create(&p_emu_rx_ThreadId,
@@ -291,12 +303,28 @@ int p_emu_start(slib_root_t* streams)
 		P_ERROR(DBG_ERROR,"Thread Init failed [%d]",err);
 		goto clean;
 	}
+	
+	
+	void 		**RevstatusID_Delay = NULL;	// Thread's Return status
+	err = pthread_create(&p_emu_Reverse_ThreadId,
+						 NULL,
+						 p_emu_ReversePathThread,
+						 (void*)&__p_emu_rev_config);
+
+	if(err)
+	{
+		P_ERROR(DBG_ERROR,"Thread Init failed [%d]",err);
+		goto clean;
+	}
+	
+	
 
 clean:
 	pthread_join(p_emu_rx_ThreadId,RxstatusID);
 	pthread_join(p_emu_pr_ThreadId,PrstatusID);
 	pthread_join(p_emu_tx_ThreadId,TxstatusID);
 	pthread_join(p_emu_tx_ThreadId_Delay,TxstatusID_Delay);
+	pthread_join(p_emu_Reverse_ThreadId,RevstatusID_Delay);
 
 
 

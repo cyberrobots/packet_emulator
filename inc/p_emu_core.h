@@ -181,6 +181,11 @@ struct p_emu_tx_config {
 	slib_root_t *streams;
 };
 
+/* Configuration for Rev path */
+struct p_emu_rev_config {
+	slib_root_t *streams;
+};
+
 struct p_emu_packet {
 	slib_node_t node;
 	int length;		/* Payload length. */

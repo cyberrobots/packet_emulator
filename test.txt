@@ -1,10 +1,10 @@
 Stream=Stream
 in_iface=enp0s25
 out_iface=enx00e097005173
-in_iface=enp0s25
 st_mac=a0:ab:cc:01:23:23
 rc_mac=a0:ab:cc:aa:23:aa
+oss_per=1.0
 niform_delay: min=5000000 max=10000000
-static_delay:sec=0 nsec=10000000
-ormal_delay: mean=10000000 stddev=2000000 shift=0
+tatic_delay:sec=0 nsec=20000000
+ormal_delay: mean=10000000 stddev=2000000
 

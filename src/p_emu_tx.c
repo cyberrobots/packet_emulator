@@ -48,7 +48,7 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
         assert(0);
 		return;
 	}else{
-		P_ERROR(DBG_INFO,"False Alarm_____[%p]",stream->tx_list);
+		P_ERROR(DBG_INFO,"ListWithPackets_____[%p]",stream->tx_list);
 	}
 
 	packet = (struct p_emu_packet *)pack_node->data;
@@ -81,10 +81,8 @@ void p_emu_tx_delayed_packet(struct p_emu_stream *stream)
         }else{
             P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d]",
                 len,strerror(errno),errno);
-
-            printf("Failed Sending packet [%d]__[%s][%d]\r\n",
-                len,strerror(errno),errno);
-            assert(0);
+            //assert(0);
+			break;
         }
 
 
@@ -264,6 +262,7 @@ void p_emu_tx_non_delayed_packet(void* data, void* node)
             P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d][%d]_____plen[%d]",
                 len,strerror(errno),errno,tries,packet->length);
             //assert(0);
+			break;
         }
 
 

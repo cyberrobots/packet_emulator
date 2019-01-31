@@ -60,10 +60,10 @@ void p_emu_rx_reverse_packet(void* data, void* node)
 			if(len!= pack->length && errno==EAGAIN){
 				tries--;
 			}else{
-				P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d]",
-						len,strerror(errno),errno);
-				//assert(0);
 				
+				P_ERROR(DBG_WARN,"Failed Sending packet [%d]__[%s][%d]",len,strerror(errno),errno);
+				//assert(0);
+				break;
 			}
 
 

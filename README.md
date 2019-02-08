@@ -1,4 +1,4 @@
-Packet Emulator (work in progress)
+Packet Emulator
 
 Project tries to emulate a very nasty behaviour where stochastic delay is introduced in every packet. 
 Network degradations can be introdued such as loss and delay. 
